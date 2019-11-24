@@ -35,7 +35,7 @@ assert_eq!(
 // but now it is.
 ```
 
-As you can see above, the attribute `gen_array` generates a new method returning an array of the given type. And the attribute `in_array` tells which fields are contained within the array returned by that method.
+As you can see above, the `gen_array` attribute generates a new method returning an array of the indicated type. And the `in_array` attribute tells which fields are contained within the array returned by that method.
 
 What `Arraygen` does under the hood is simply generating the following impl:
 
@@ -50,7 +50,7 @@ impl Person {
 
 #### The attribute `gen_array`
 
-For generating an `Arraygen` method you have to use the attribute `gen_array` on top of the struct, indicating the method name.
+For generating an `Arraygen` method you have to use the attribute `gen_array` on top of the struct, indicating the method name and the return type.
 
 ```rust
 #[derive(Arraygen)]
@@ -62,7 +62,7 @@ In the code above, the struct `Foo` would have a new method with the following s
 
 #### The attribute `in_array`
 
-In order to fill your `Arraygen` methods with struct fields, you have to use the attribute `in_array` in each struct field you want to select.
+In order to fill your `Arraygen` methods with struct fields, you have to use the attribute `in_array` in each struct field you want to include.
 
 ```rust
 // inside a struct
@@ -94,7 +94,8 @@ I'm open to change the syntax for the 1.0 version. Participate in the issue [Syn
 ## GettersByType
 
 This crate is heavily inspired by [GettersByType](https://github.com/theypsilon/getters-by-type-rs) which is another derive that allows you
-to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose.
+to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose. That's
+why I decided to work on this new solution.
 
 ## License
 
