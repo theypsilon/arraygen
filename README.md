@@ -64,11 +64,11 @@ name: String
 
 You have to match the method name used in `gen_array` and in `in_array` in order to include those fields in the generated method.
 
-#### Documentation
+## Documentation
 
 For more information, check the [documentation page](https://docs.rs/arraygen).
 
-#### Limitations
+## Limitations
 
 There are not particular limitations, really. You can use this derive to return Copy objects, Trait objects, and basically any kind of object that can be a struct member.
 
@@ -76,11 +76,11 @@ Also, notice that there are no dynamic memory allocations involved.
 
 The only drawback would be a little impact in compilation times.
 
-#### About the Syntax
+## About the Syntax
 
 I'm open to change the syntax for the 1.0 version. Participate in the issue Syntax propolsas to give you opinion on this matter.
 
-#### GettersByType
+## GettersByType
 
 This crate is heavily inspired by [GettersByType](http://www.github.com/theypsilon/getters-by-type) which is another derive that allows you
 to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose.
