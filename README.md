@@ -60,6 +60,7 @@ In order to fill your `Arraygen` methods with struct fields, you have to use the
 name: String
 
 #[in_array(get_strings)]
+id: String
 ```
 
 You have to match the method name used in `gen_array` and in `in_array` in order to include those fields in the generated method.
