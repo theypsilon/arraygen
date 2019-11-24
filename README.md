@@ -82,7 +82,7 @@ I'm open to change the syntax for the 1.0 version. Participate in the issue Synt
 
 ## GettersByType
 
-This crate is heavily inspired by [GettersByType](http://www.github.com/theypsilon/getters-by-type) which is another derive that allows you
+This crate is heavily inspired by [GettersByType](https://github.com/theypsilon/getters-by-type-rs) which is another derive that allows you
 to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose.
 
 ## License
