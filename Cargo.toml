@@ -1,0 +1,26 @@
+[package]
+name = "arraygen"
+version = "0.2.6"
+authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
+license = "MIT"
+edition = "2018"
+
+description = "Derive macro for adding a getter method for each type in the struct."
+readme = "README.md"
+documentation = "https://docs.rs/arraygen"
+
+repository = "https://github.com/theypsilon/arraygen-rs"
+keywords = ["getter", "struct", "derive", "field", "iter"]
+categories = ["rust-patterns"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.2"
+proc-macro2 = "1.0.6"
+proc-macro-error = "0.4"
+
+[dependencies.syn]
+version = "1.0.8"
+features = ["extra-traits"]

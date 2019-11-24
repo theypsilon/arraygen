@@ -1,0 +1,90 @@
+# Arraygen
+
+[![Crates.io](https://img.shields.io/crates/v/arraygen.svg)](https://crates.io/crates/arraygen)
+[![Docs](https://docs.rs/arraygen/badge.svg)](https://docs.rs/arraygen)
+
+This crate provides `Arraygen` derive macro for structs, which generates methods returning arrays filled with the selected struct fields.
+
+# Complete example:
+
+```rust
+#[derive(Arraygen, Debug)]
+#[gen_array(fn get_names: &mut String)]
+struct Person {
+    #[in_array(get_names)]
+    first_name: String,
+    #[in_array(get_names)]
+    last_name: String,
+}
+
+let mut person = Person { first_name: "Ada".into(), last_name: "Lovelace".into() };
+for name in person.get_names().iter_mut() {
+    **name = name.to_lowercase();
+}
+
+assert_eq!(format!("{:?}", person), "Person { first_name: \"ada\", last_name: \"lovelace\" }"); // PASSES !
+```
+
+As you can see above, the attribute `gen_array` generates a new method returning an array of the given type. And the attribute `in_array` selects those struct fields to be used by that method.
+
+What `Arraygen` does under the hood is simmply generating the following impl:
+
+```rust
+impl Person {
+    #[inline(always)]
+    fn get_names(&mut self) -> [&mut String; 2] {
+        [&mut self.first_name, &mut self.last_name]
+    }
+}
+```
+
+# The attribute `gen_array`
+
+For declaring a generated method you have to use the attribute `gen_array` on top of the struct, indicating the method name.
+
+```rust
+#[derive(Arraygen)]
+#[gen_array(fn get_strings: &String]
+struct Foo {...}
+```
+
+In the code above, the struct `Foo` would have a new method with the following signature: `fn get_strings(&self) -> [&Strings; ?] {...}`.
+
+# The attribute `in_array`
+
+In order to fill your generated methods with struct fields, you have to use the attribute `in_array` in each struct field you want to select.
+
+```rust
+// inside a struct
+#[in_array(get_strings)]
+name: String
+
+#[in_array(get_strings)]
+```
+
+You have to match the method name used in `gen_array` and in `in_array` in order to include those fields in the generated method.
+
+# Documentation
+
+For more information, check the [documentation page](https://docs.rs/arraygen).
+
+# Limitations
+
+There are not limitations, really. You can use this derive to return Copy objects, Trait objects, and basically any kind of object that can be a struct member.
+
+Also, notice that there are no dynamic memory allocations involved.
+
+The only drawback would be a little impact in those compilation times.
+
+# About the Syntax
+
+I'm open to change the syntax for the 1.0 version. Participate in the issue Syntax propolsas to give you opinion on this matter.
+
+# GettersByType
+
+This crate is heavily inspired by [GettersByType](http://www.github.com/theypsilon/getters-by-type) which is another derive that allows you
+to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose.
+
+## License
+
+MIT
