@@ -31,9 +31,10 @@
 //! ```
 //!
 //! As you can see above, the attribute `gen_array` generates a new method returning an array of the given type.
-//! And the attribute `in_array` selects those struct fields to be used by that method.
+//! And the attribute `in_array` indicates the fields to be included by that method. In this case, the
+//! generated method 'get_names' will return an array including references to all the fields of the struct.
 //! 
-//! What `Arraygen` does under the hood is simply generating the following impl:
+//! As you might have guessed, what `Arraygen` does under the hood is simply generating the following impl:
 //! 
 //! ```rust
 //! struct Person {
