@@ -67,10 +67,10 @@ In order to fill your `Arraygen` methods with struct fields, you have to use the
 ```rust
 // inside a struct
 #[in_array(get_strings)]
-name: String
+name: String,
 
 #[in_array(get_strings)]
-id: String
+id: String,
 ```
 
 You have to match the method name used in `gen_array` and in `in_array` in order to include those fields in the generated method.
