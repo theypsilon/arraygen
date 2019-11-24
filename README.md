@@ -5,7 +5,7 @@
 
 This crate provides `Arraygen` derive macro for structs, which generates methods returning arrays filled with the selected struct fields.
 
-# Complete example:
+#### Complete example:
 
 ```rust
 #[derive(Arraygen, Debug)]
@@ -38,9 +38,9 @@ impl Person {
 }
 ```
 
-# The attribute `gen_array`
+#### The attribute `gen_array`
 
-For declaring a generated method you have to use the attribute `gen_array` on top of the struct, indicating the method name.
+For generating an `Arraygen` method you have to use the attribute `gen_array` on top of the struct, indicating the method name.
 
 ```rust
 #[derive(Arraygen)]
@@ -50,9 +50,9 @@ struct Foo {...}
 
 In the code above, the struct `Foo` would have a new method with the following signature: `fn get_strings(&self) -> [&Strings; ?] {...}`.
 
-# The attribute `in_array`
+#### The attribute `in_array`
 
-In order to fill your generated methods with struct fields, you have to use the attribute `in_array` in each struct field you want to select.
+In order to fill your `Arraygen` methods with struct fields, you have to use the attribute `in_array` in each struct field you want to select.
 
 ```rust
 // inside a struct
@@ -64,23 +64,23 @@ name: String
 
 You have to match the method name used in `gen_array` and in `in_array` in order to include those fields in the generated method.
 
-# Documentation
+#### Documentation
 
 For more information, check the [documentation page](https://docs.rs/arraygen).
 
-# Limitations
+#### Limitations
 
-There are not limitations, really. You can use this derive to return Copy objects, Trait objects, and basically any kind of object that can be a struct member.
+There are not particular limitations, really. You can use this derive to return Copy objects, Trait objects, and basically any kind of object that can be a struct member.
 
 Also, notice that there are no dynamic memory allocations involved.
 
-The only drawback would be a little impact in those compilation times.
+The only drawback would be a little impact in compilation times.
 
-# About the Syntax
+#### About the Syntax
 
 I'm open to change the syntax for the 1.0 version. Participate in the issue Syntax propolsas to give you opinion on this matter.
 
-# GettersByType
+#### GettersByType
 
 This crate is heavily inspired by [GettersByType](http://www.github.com/theypsilon/getters-by-type) which is another derive that allows you
 to do the same thing. But that one is more opinionated, less flexible and less powerful, with the only advantage of being less verbose.
