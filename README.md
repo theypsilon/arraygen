@@ -78,7 +78,7 @@ The only drawback would be a little impact in compilation times.
 
 ## About the Syntax
 
-I'm open to change the syntax for the 1.0 version. Participate in the issue Syntax propolsas to give you opinion on this matter.
+I'm open to change the syntax for the 1.0 version. Participate in the issue [Syntax propolsas](https://github.com/theypsilon/arraygen/issues/1) to give your opinion on this matter.
 
 ## GettersByType
 
