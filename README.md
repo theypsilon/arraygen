@@ -31,7 +31,8 @@ assert_eq!(
     "Person { first_name: \"ada\", last_name: \"lovelace\" }"
 );
 // PASSES !
-// Notice how it was not lowercased on type definition but now it is.
+// Notice how it was not lowercased on type definition
+// but now it is.
 ```
 
 As you can see above, the attribute `gen_array` generates a new method returning an array of the given type. And the attribute `in_array` tells which fields are contained within the array returned by that method.
