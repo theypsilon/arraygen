@@ -17,17 +17,26 @@ struct Person {
     last_name: String,
 }
 
-let mut person = Person { first_name: "Ada".into(), last_name: "Lovelace".into() };
+let mut person = Person {
+    first_name: "Ada".into(),
+    last_name: "Lovelace".into()
+};
+
 for name in person.get_names().iter_mut() {
     **name = name.to_lowercase();
 }
 
-assert_eq!(format!("{:?}", person), "Person { first_name: \"ada\", last_name: \"lovelace\" }"); // PASSES !
+assert_eq!(
+    format!("{:?}", person),
+    "Person { first_name: \"ada\", last_name: \"lovelace\" }"
+);
+// PASSES !
+// Notice how it was not lowercased on type definition but now it is.
 ```
 
-As you can see above, the attribute `gen_array` generates a new method returning an array of the given type. And the attribute `in_array` selects those struct fields to be used by that method.
+As you can see above, the attribute `gen_array` generates a new method returning an array of the given type. And the attribute `in_array` tells which fields are contained within the array returned by that method.
 
-What `Arraygen` does under the hood is simmply generating the following impl:
+What `Arraygen` does under the hood is simply generating the following impl:
 
 ```rust
 impl Person {
@@ -79,7 +88,7 @@ The only drawback would be a little impact in compilation times.
 
 ## About the Syntax
 
-I'm open to change the syntax for the 1.0 version. Participate in the issue [Syntax propolsas](https://github.com/theypsilon/arraygen/issues/1) to give your opinion on this matter.
+I'm open to change the syntax for the 1.0 version. Participate in the issue [Syntax Proposals](https://github.com/theypsilon/arraygen/issues/1) to give your opinion on this matter.
 
 ## GettersByType
 
