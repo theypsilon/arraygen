@@ -5,10 +5,11 @@ authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
 edition = "2018"
 
-description = "Derive macro for adding a getter method for each type in the struct."
+description = "Derive macro for generating arrays from struct fields."
 readme = "README.md"
 documentation = "https://docs.rs/arraygen"
 
+homepage = "https://github.com/theypsilon/arraygen"
 repository = "https://github.com/theypsilon/arraygen"
 keywords = ["array", "struct", "derive", "field", "iter"]
 categories = ["rust-patterns"]
