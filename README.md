@@ -58,7 +58,11 @@ For generating an `Arraygen` method you have to use the attribute `gen_array` on
 struct Foo {...}
 ```
 
-In the code above, the struct `Foo` would have a new method with the following signature: `fn get_strings(&self) -> [&Strings; ?] {...}`.
+In the code above, the struct `Foo` would have a new method with the following signature:
+
+```rust
+fn get_strings(&self) -> [&Strings; ?] {...}
+```
 
 #### The attribute `in_array`
 
