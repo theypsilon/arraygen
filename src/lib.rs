@@ -184,7 +184,7 @@ use std::collections::HashMap;
 /// #    fn talk(&self) -> &'static str {
 /// #        "oink"
 /// #    }
-/// #}
+/// # }
 ///
 /// #[derive(Arraygen)]
 /// #[gen_array(fn get_animals: &dyn Animal)]
