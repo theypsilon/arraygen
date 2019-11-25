@@ -88,7 +88,32 @@ use std::collections::HashMap;
 /// This is the way to fill up your `Arraygen` methods.
 ///
 /// The only thing you need to care about is that the type returned by `your_method_name` needs to be compatible with the type of the field with the `in_array` attribute.
-/// Notice that non-reference field types can be returned as references, but not the other way around.
+/// 
+/// Notice thought, that non-reference field types can be returned as references, but not the other way around. Or in other words. This is good:
+/// 
+/// ```rust
+/// use arraygen::Arraygen;
+/// 
+/// #[derive(Arraygen)]
+/// #[gen_array(fn references: &i32)]
+/// struct Test {
+///     #[in_array(references)]
+///     data: i32
+/// }
+/// ```
+/// 
+/// But this is bad:
+/// 
+/// ```rust
+/// use arraygen::Arraygen;
+/// 
+/// #[derive(Arraygen)]
+/// #[gen_array(fn non_references: i32)]
+/// struct Test {
+///     #[in_array(non_references)]
+///     data: &i32
+/// }
+/// ```
 ///
 /// Is also good to know that the same field can be included in many `Arraygen` methods, not just in only one.
 /// You will see what I mean by checking the following example:
