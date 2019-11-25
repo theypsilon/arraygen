@@ -64,9 +64,9 @@ use std::collections::HashMap;
 ///
 /// `#[gen_array(?visibility fn your_method_name: YourReturnType)]`
 ///
-/// * 'visibility' is optional, you can let it blank entirely, or write `pub`, `pub(crate)` and any other pub variant.
-/// * 'your_method_name' can be any valid method name. You can't use a name taken by another mehtod in the struct impl, including also other `Arraygen` methods. Otherwise you will get an error.
-/// * 'YourReturnType' can be any Rust type that can appear in a struct field. Notice that if the `type` does not implement the trait 'Copy', you are better returning `&type` or `&mut type` instead, in order to avoid ownership errors.
+/// * **?visibility** is optional, you can let it blank entirely, or write `pub`, `pub(crate)` and any other pub variant.
+/// * **your_method_name** can be any valid method name. You can't use a name taken by another mehtod in the struct impl, including also other `Arraygen` methods. Otherwise you will get an error.
+/// * **YourReturnType** can be any Rust type that can appear in a struct field. Notice that if the `type` does not implement the trait 'Copy', you are better returning `&type` or `&mut type` instead, in order to avoid ownership errors.
 ///
 /// There is no limit in the number of methods you can declare.
 ///
