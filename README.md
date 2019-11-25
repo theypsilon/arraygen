@@ -31,7 +31,7 @@ assert_eq!(
     "Person { first_name: \"ada\", last_name: \"lovelace\" }"
 );
 // PASSES !
-// Notice how it was not lowercased on type definition
+// Notice how it was not lowercased on object creation
 // but now it is.
 ```
 
