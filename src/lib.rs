@@ -179,6 +179,12 @@ use std::collections::HashMap;
 /// #        "meow"
 /// #    }
 /// # }
+/// # struct Pig {}
+/// # impl Animal for Pig {
+/// #    fn talk(&self) -> &'static str {
+/// #        "oink"
+/// #    }
+/// #}
 ///
 /// #[derive(Arraygen)]
 /// #[gen_array(fn get_animals: &dyn Animal)]
@@ -188,13 +194,13 @@ use std::collections::HashMap;
 ///     #[in_array(get_animals)]
 ///     tiger: Cat,
 ///     #[in_array(get_animals)]
-///     kitty: Cat,
+///     bacon: Pig,
 /// }
 ///
 /// let animals = Animals {
 ///     dogo: Dog {},
 ///     tiger: Cat {},
-///     kitty: Cat {}
+///     bacon: Pig {}
 /// };
 ///
 /// let talk: Vec<&'static str> = animals
@@ -203,7 +209,7 @@ use std::collections::HashMap;
 ///     .map(|animal| animal.talk())
 ///     .collect();
 ///
-/// assert_eq!(talk, ["bark", "meow", "meow"]);
+/// assert_eq!(talk, ["bark", "meow", "oink"]);
 /// ```
 ///
 /// And a more realistic example could be this other one:
