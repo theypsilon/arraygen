@@ -1,6 +1,6 @@
 [package]
-name = "arraygen-docfix"
-version = "0.1.8"
+name = "arraygen"
+version = "0.1.11"
 authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
 edition = "2018"
