@@ -89,13 +89,14 @@ Trait Objects are fully supported, check the documentation to see a few working 
 
 For more information, check the [documentation page](https://docs.rs/arraygen).
 
-## Limitations
+## Usage
 
-There are not particular limitations, really. You can use this derive to return Copy objects, Trait objects, and basically any kind of object that can be a struct member.
+With Cargo, you can add this line to your Cargo.toml:
 
-Also, notice that there are no dynamic memory allocations involved.
-
-The only drawback would be a little impact in compilation times.
+```toml
+[dependencies]
+arraygen = "0.1.11"
+```
 
 ## About the Syntax
 
