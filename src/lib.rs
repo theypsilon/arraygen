@@ -37,11 +37,10 @@
 //! As you might have guessed, what `Arraygen` does under the hood is simply generating the following impl:
 //!
 //! ```rust
-//! struct Person {
-//!     first_name: String,
-//!     last_name: String,
-//! }
-//!
+//! # struct Person {
+//! #     first_name: String,
+//! #     last_name: String,
+//! # }
 //! impl Person {
 //!     #[inline(always)]
 //!     fn get_names(&mut self) -> [&mut String; 2] {
