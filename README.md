@@ -54,7 +54,7 @@ For generating an `Arraygen` method you have to use the attribute `gen_array` on
 
 ```rust
 #[derive(Arraygen)]
-#[pub(crate) get_strings(fn get_strings: &String]
+#[gen_array(pub(crate) fn get_strings: &String)]
 struct Foo {...}
 ```
 
