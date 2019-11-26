@@ -61,7 +61,7 @@ struct Foo {...}
 In the code above, the struct `Foo` would have a new method with the following signature:
 
 ```rust
-pub(crate) fn get_strings(&self) -> [&Strings; ?] {...}
+pub(crate) fn get_strings(&self) -> [&String; ?] {...}
 ```
 
 #### The attribute `in_array`
