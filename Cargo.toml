@@ -1,6 +1,6 @@
 [package]
 name = "arraygen"
-version = "0.1.11"
+version = "0.1.12"
 authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
 edition = "2018"
