@@ -140,4 +140,34 @@ mod tests {
 
         assert_eq!(test.foo().len(), 0);
     }
+
+    #[test]
+    fn test_arraygen___display_sim___bug_is_fixed() {
+        trait UiController {
+            fn give(&self) -> f32;
+        }
+
+        #[derive(Clone)]
+        struct RgbRedR {
+            pub value: f32
+        }
+        impl UiController for RgbRedR {
+            fn give(&self) -> f32 {
+                self.value
+            }
+        }
+
+        #[derive(Clone, Arraygen)]
+        #[gen_array(pub fn get_ui_controllers: &dyn UiController)]
+        #[gen_array(pub fn get_ui_controllers_mut: &mut dyn UiController)]
+        struct DisplaySimBug {
+            #[in_array(get_ui_controllers, get_ui_controllers_mut)]
+            rgb_red_r: RgbRedR,
+        }
+
+        let mut sut = DisplaySimBug { rgb_red_r: RgbRedR { value: 3.0 }};
+
+        assert_eq!(sut.get_ui_controllers_mut().len(), 1);
+        assert_eq!(sut.get_ui_controllers().len(), 1);
+    }
 }
