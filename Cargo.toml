@@ -1,6 +1,6 @@
 [package]
 name = "arraygen"
-version = "0.1.13"
+version = "0.1.14"
 authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
 edition = "2018"
@@ -18,10 +18,10 @@ categories = ["rust-patterns"]
 proc-macro = true
 
 [dependencies]
-quote = "1.0.2"
-proc-macro2 = "1.0.6"
-proc-macro-error = "0.4"
-syn = "1.0.8"
+quote = "1.0.7"
+proc-macro2 = "1.0.21"
+proc-macro-error = "1.0"
+syn = "1.0.40"
 
 [dev-dependencies]
-compiletest_rs = "0.4.0"
+compiletest_rs = "0.5.0"
