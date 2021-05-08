@@ -149,7 +149,7 @@ mod tests {
 
         #[derive(Clone)]
         struct RgbRedR {
-            pub value: f32
+            pub value: f32,
         }
         impl UiController for RgbRedR {
             fn give(&self) -> f32 {
@@ -165,7 +165,9 @@ mod tests {
             rgb_red_r: RgbRedR,
         }
 
-        let mut sut = DisplaySimBug { rgb_red_r: RgbRedR { value: 3.0 }};
+        let mut sut = DisplaySimBug {
+            rgb_red_r: RgbRedR { value: 3.0 },
+        };
 
         assert_eq!(sut.get_ui_controllers_mut().len(), 1);
         assert_eq!(sut.get_ui_controllers().len(), 1);
