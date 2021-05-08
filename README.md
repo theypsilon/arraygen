@@ -1,7 +1,9 @@
-# Arraygen [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/josembarroso.svg?style=social&label=Follow%20%40josembarroso)](https://twitter.com/josembarroso) <span class="badge-buymeacoffee"><a href="https://ko-fi.com/theypsilon" title="Buy Me a Coffee at ko-fi.com'"><img src="https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg" alt="Buy Me a Coffee at ko-fi.com'" /></a></span>
+# Arraygen
 
 [![Crates.io](https://img.shields.io/crates/v/arraygen.svg)](https://crates.io/crates/arraygen)
 [![Docs](https://docs.rs/arraygen/badge.svg)](https://docs.rs/arraygen)
+[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/josembarroso.svg?style=social&label=Follow%20%40josembarroso)](https://twitter.com/josembarroso)
+<span class="badge-buymeacoffee"><a href="https://ko-fi.com/theypsilon" title="Buy Me a Coffee at ko-fi.com'"><img src="https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg" alt="Buy Me a Coffee at ko-fi.com'" /></a></span>
 
 This crate provides `Arraygen` derive macro for structs, which generates methods returning arrays filled with the selected struct fields.
 
