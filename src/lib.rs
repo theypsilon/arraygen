@@ -378,125 +378,159 @@ enum FunctionParsing {
     Error,
 }
 
+struct DeclaredMethodParser {
+    search_element: FunctionParsing,
+    name: Option<syn::Ident>,
+    ty: Vec<TokenTree>,
+    vis: Vec<TokenTree>,
+    body: Vec<TokenTree>
+}
+
+impl DeclaredMethodParser {
+    pub fn new() -> DeclaredMethodParser {
+        DeclaredMethodParser {
+            search_element: FunctionParsing::Begin,
+            name: None,
+            ty: vec![],
+            vis: vec![],
+            body: vec![],
+        }
+    }
+    pub fn parse(mut self,
+        tokens: proc_macro2::TokenStream,
+        gen_array_span: proc_macro2::Span,
+    ) -> DeclaredFunction {
+        self.parse_tokens(tokens);
+        if self.ty.len() == 0 {
+            self.search_element = FunctionParsing::Error;
+        }
+        let is_ref = self.ty.len() >= 1 && self.ty[0].to_string() == "&";
+        let is_mut = is_ref && self.ty.len() >= 2 && self.ty[1].to_string() == "mut";
+        let decl_fn = if let Some(name) = self.name {
+            Some(DeclaredFunction {
+                name: name,
+                vis: self.vis.into_iter().collect(),
+                ty: self.ty.into_iter().collect(),
+                body: self.body.into_iter().collect(),
+                is_mut,
+                is_ref,
+                fields: vec![],
+            })
+        } else {
+            None
+        };
+        match self.search_element {
+            FunctionParsing::ExpectingType => {
+                if let Some(decl_fn) = decl_fn {
+                    return decl_fn;
+                }
+            }
+            FunctionParsing::Error => {
+                if let Some(decl_fn) = decl_fn {
+                    abort!(decl_fn.name.span(), "'{}' tried to declare a method '{}', but the return type syntax was wrong.", DECL_FN_NAME, decl_fn.name;
+                        help = "Correct syntax is {}", decl_fn_correct_syntax(&decl_fn););
+                } else {
+                    abort!(gen_array_span, "'{}' was used with the wrong syntax.", DECL_FN_NAME;
+                        help = "Correct syntax is {}", decl_fn_correct_syntax_without_name());
+                }
+            }
+            _ => {}
+        }
+        abort!(
+            gen_array_span,
+            "Bug on '{}', contact with the maintainer of {} crate.",
+            DECL_FN_NAME,
+            DERIVE_NAME
+        );
+    }
+    fn parse_tokens(&mut self, tokens: proc_macro2::TokenStream) {
+        for token in tokens.into_iter() {
+            match token {
+                TokenTree::Group(group) => self.parse_main_group(group),
+                _ => self.search_element = FunctionParsing::Error,
+            }
+        }
+    }
+    fn parse_main_group(&mut self, group: proc_macro2::Group) {
+        for token in group.stream().into_iter() {
+            if let FunctionParsing::ExpectingType = self.search_element {
+                self.ty.push(token.clone());
+                continue;
+            }
+            match token {
+                TokenTree::Ident(ref ident) => self.parse_ident(ident, &token),
+                TokenTree::Group(_) => self.parse_group(&token),
+                TokenTree::Punct(ref punct) => self.parse_punct(punct),
+                _ => self.search_element = FunctionParsing::Error,
+            }
+        }
+    }
+    fn parse_ident(&mut self, ident: &proc_macro2::Ident, token: &proc_macro2::TokenTree) {
+        match self.search_element {
+            FunctionParsing::Begin => match ident.to_string().as_ref() {
+                "pub" => {
+                    self.vis.push(token.clone());
+                    self.search_element = FunctionParsing::ExpectingFnOrPubCrate;
+                }
+                "fn" => {
+                    self.body.push(token.clone());
+                    self.search_element = FunctionParsing::ExpectingName;
+                }
+                _ => self.search_element = FunctionParsing::Error,
+            },
+            FunctionParsing::ExpectingFnOrPubCrate
+            | FunctionParsing::ExpectingFn => match ident.to_string().as_ref() {
+                "fn" => {
+                    self.body.push(token.clone());
+                    self.search_element = FunctionParsing::ExpectingName;
+                }
+                _ => self.search_element = FunctionParsing::Error,
+            },
+            FunctionParsing::ExpectingName => {
+                self.name = Some(ident.clone());
+                self.body.push(token.clone());
+                self.search_element = FunctionParsing::ExpectingColon;
+            }
+            _ => self.search_element = FunctionParsing::Error,
+        }
+    }
+    fn parse_group(&mut self, token: &proc_macro2::TokenTree) {
+        match self.search_element {
+            FunctionParsing::ExpectingFnOrPubCrate => {
+                self.vis.push(token.clone());
+                self.search_element = FunctionParsing::ExpectingFn;
+            }
+            _ => self.search_element = FunctionParsing::Error,
+        }
+    }
+    fn parse_punct(&mut self, punct: &proc_macro2::Punct) {
+        match self.search_element {
+            FunctionParsing::ExpectingArrowEnd => {
+                if punct.to_string() == ">" {
+                    self.search_element = FunctionParsing::ExpectingType;
+                } else {
+                    self.search_element = FunctionParsing::Error;
+                }
+            }
+            FunctionParsing::ExpectingColon => {
+                if punct.to_string() == ":" {
+                    self.search_element = FunctionParsing::ExpectingType;
+                } else if punct.to_string() == "-" {
+                    self.search_element = FunctionParsing::ExpectingArrowEnd;
+                } else {
+                    self.search_element = FunctionParsing::Error
+                }
+            }
+            _ => self.search_element = FunctionParsing::Error,
+        }
+    }
+}
+
 fn parse_declared_method(
     tokens: proc_macro2::TokenStream,
     gen_array_span: proc_macro2::Span,
 ) -> DeclaredFunction {
-    let mut search_element = FunctionParsing::Begin;
-    let mut name: Option<syn::Ident> = None;
-    let mut ty: Vec<TokenTree> = vec![];
-    let mut vis: Vec<TokenTree> = vec![];
-    let mut body: Vec<TokenTree> = vec![];
-    for token in tokens.into_iter() {
-        match token {
-            TokenTree::Group(group) => {
-                for token in group.stream().into_iter() {
-                    if let FunctionParsing::ExpectingType = search_element {
-                        ty.push(token.clone());
-                        continue;
-                    }
-                    match token {
-                        TokenTree::Ident(ref ident) => match search_element {
-                            FunctionParsing::Begin => match ident.to_string().as_ref() {
-                                "pub" => {
-                                    vis.push(token.clone());
-                                    search_element = FunctionParsing::ExpectingFnOrPubCrate;
-                                }
-                                "fn" => {
-                                    body.push(token.clone());
-                                    search_element = FunctionParsing::ExpectingName;
-                                }
-                                _ => search_element = FunctionParsing::Error,
-                            },
-                            FunctionParsing::ExpectingFnOrPubCrate
-                            | FunctionParsing::ExpectingFn => match ident.to_string().as_ref() {
-                                "fn" => {
-                                    body.push(token.clone());
-                                    search_element = FunctionParsing::ExpectingName;
-                                }
-                                _ => search_element = FunctionParsing::Error,
-                            },
-                            FunctionParsing::ExpectingName => {
-                                name = Some(ident.clone());
-                                body.push(token.clone());
-                                search_element = FunctionParsing::ExpectingColon;
-                            }
-                            _ => search_element = FunctionParsing::Error,
-                        },
-                        TokenTree::Group(_) => match search_element {
-                            FunctionParsing::ExpectingFnOrPubCrate => {
-                                vis.push(token.clone());
-                                search_element = FunctionParsing::ExpectingFn;
-                            }
-                            _ => search_element = FunctionParsing::Error,
-                        },
-                        TokenTree::Punct(ref punct) => match search_element {
-                            FunctionParsing::ExpectingArrowEnd => {
-                                if punct.to_string() == ">" {
-                                    search_element = FunctionParsing::ExpectingType;
-                                } else {
-                                    search_element = FunctionParsing::Error;
-                                }
-                            }
-                            FunctionParsing::ExpectingColon => {
-                                if punct.to_string() == ":" {
-                                    search_element = FunctionParsing::ExpectingType;
-                                } else if punct.to_string() == "-" {
-                                    search_element = FunctionParsing::ExpectingArrowEnd;
-                                } else {
-                                    search_element = FunctionParsing::Error
-                                }
-                            }
-                            _ => search_element = FunctionParsing::Error,
-                        },
-                        _ => search_element = FunctionParsing::Error,
-                    }
-                }
-            }
-            _ => search_element = FunctionParsing::Error,
-        }
-    }
-    if ty.len() == 0 {
-        search_element = FunctionParsing::Error;
-    }
-    let is_ref = ty.len() >= 1 && ty[0].to_string() == "&";
-    let is_mut = is_ref && ty.len() >= 2 && ty[1].to_string() == "mut";
-    let decl_fn = if let Some(name) = name {
-        Some(DeclaredFunction {
-            name,
-            vis: vis.into_iter().collect(),
-            ty: ty.into_iter().collect(),
-            body: body.into_iter().collect(),
-            is_mut,
-            is_ref,
-            fields: vec![],
-        })
-    } else {
-        None
-    };
-    match search_element {
-        FunctionParsing::ExpectingType => {
-            if let Some(decl_fn) = decl_fn {
-                return decl_fn;
-            }
-        }
-        FunctionParsing::Error => {
-            if let Some(decl_fn) = decl_fn {
-                abort!(decl_fn.name.span(), "'{}' tried to declare a method '{}', but the return type syntax was wrong.", DECL_FN_NAME, decl_fn.name;
-                    help = "Correct syntax is {}", decl_fn_correct_syntax(&decl_fn););
-            } else {
-                abort!(gen_array_span, "'{}' was used with the wrong syntax.", DECL_FN_NAME;
-                    help = "Correct syntax is {}", decl_fn_correct_syntax_without_name());
-            }
-        }
-        _ => {}
-    }
-    abort!(
-        gen_array_span,
-        "Bug on '{}', contact with the maintainer of {} crate.",
-        DECL_FN_NAME,
-        DERIVE_NAME
-    );
+    DeclaredMethodParser::new().parse(tokens, gen_array_span)
 }
 
 fn read_fields(fields: &syn::Fields, methods: &mut HashMap<syn::Ident, DeclaredFunction>) {
@@ -506,90 +540,125 @@ fn read_fields(fields: &syn::Fields, methods: &mut HashMap<syn::Ident, DeclaredF
         }
         if let Some(ref ident) = field.ident {
             for attr in field.attrs.iter() {
-                let segments: Vec<_> = attr
-                    .path
-                    .segments
-                    .iter()
-                    .filter_map(|segment| {
-                        if segment.ident == INCLUDE_FIELD {
-                            Some(segment.ident.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-                let include_ident = match segments.len() {
-                    0 => continue,
-                    1 => &segments[0],
-                    // @TODO Not sure if this condition can actually happen, not covered in tests yet.
-                    _ => abort!(
-                        segments[0].span(),
-                        "Wrong syntax, used multiple '{}' in same attribute.",
-                        INCLUDE_FIELD
-                    ),
-                };
-                let mut error = false;
-                let mut correct_fns = vec![];
-                let mut need_comma = false;
-                for token in attr.tokens.clone() {
-                    match token {
-                        TokenTree::Group(group) => {
-                            for token in group.stream().into_iter() {
-                                match token {
-                                    TokenTree::Ident(name) => {
-                                        if need_comma {
-                                            error = true;
-                                        }
-                                        match methods.get_mut(&name) {
-                                            Some(ref mut method) => {
-                                                let has_this_field_already = method.fields.iter().any(|field| field == ident);
-                                                if has_this_field_already {
-                                                    abort!(include_ident.span(), "Field '{}' is already included in method '{}', no need to repeat it.", ident, name;
-                                                        help = "Remove the repeated entries.");
-                                                }
-                                                method.fields.push(ident.clone());
-                                                need_comma = true;
-                                            }
-                                            None => error = true,
-                                        }
-                                        correct_fns.push(name.clone());
-                                    }
-                                    TokenTree::Punct(punct) => {
-                                        if need_comma && punct.to_string() == "," {
-                                            need_comma = false;
-                                        } else {
-                                            error = true;
-                                        }
-                                    }
-                                    _ => error = true,
-                                }
-                            }
-                        }
-                        _ => error = true,
-                    }
-                }
-                if error {
-                    if correct_fns.len() > 0 {
-                        for correct_fn in &correct_fns {
-                            if let None = methods.get_mut(&correct_fn) {
-                                abort!(correct_fn.span(), "Method '{}' was not declared with the attribute '{}' at struct level.", correct_fn, DECL_FN_NAME);
-                            }
-                        }
-                        let correct_fns = correct_fns
-                            .iter()
-                            .map(|ident| ident.to_string())
-                            .collect::<Vec<String>>()
-                            .join(", ");
-                        abort!(include_ident.span(), "'{}' shouldn't contain those tokens.", INCLUDE_FIELD;
-                            help = "Correct syntax is {}", include_field_correct_syntax(&correct_fns));
-                    } else {
-                        abort!(include_ident.span(), "'{}' was used with the wrong syntax.", INCLUDE_FIELD;
-                            help = "Correct syntax is {}", include_field_correct_syntax_without_name());
-                    }
-                }
+                read_attr_ident(&attr, ident, methods);
             }
         }
     }
+}
+
+struct FieldParser<'a> {
+    methods: &'a mut HashMap<syn::Ident, DeclaredFunction>,
+    ident: &'a proc_macro2::Ident,
+    include_ident: &'a proc_macro2::Ident,
+    correct_fns: Vec<proc_macro2::Ident>,
+    need_comma: bool,
+    error: bool,
+}
+
+impl<'a> FieldParser<'a> {
+    pub fn new(methods: &'a mut HashMap<syn::Ident, DeclaredFunction>, ident: &'a proc_macro2::Ident, include_ident: &'a proc_macro2::Ident) -> FieldParser<'a> {
+        FieldParser {
+            methods,
+            ident,
+            include_ident,
+            correct_fns: vec![],
+            need_comma: false,
+            error: false,
+        }
+    }
+
+    pub fn parse(mut self, tokens: proc_macro2::TokenStream) {
+        for token in tokens {
+            match token {
+                TokenTree::Group(group) => self.parse_group(group),
+                _ => self.error = true,
+            }
+        }
+        if self.error {
+            if self.correct_fns.len() > 0 {
+                for correct_fn in &self.correct_fns {
+                    if let None = self.methods.get_mut(&correct_fn) {
+                        abort!(correct_fn.span(), "Method '{}' was not declared with the attribute '{}' at struct level.", correct_fn, DECL_FN_NAME);
+                    }
+                }
+                let correct_fns = self.correct_fns
+                    .iter()
+                    .map(|ident| ident.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                abort!(self.include_ident.span(), "'{}' shouldn't contain those tokens.", INCLUDE_FIELD;
+                    help = "Correct syntax is {}", include_field_correct_syntax(&correct_fns));
+            } else {
+                abort!(self.include_ident.span(), "'{}' was used with the wrong syntax.", INCLUDE_FIELD;
+                    help = "Correct syntax is {}", include_field_correct_syntax_without_name());
+            }
+        }
+    }
+
+    fn parse_group(&mut self, group: proc_macro2::Group) {
+        for token in group.stream().into_iter() {
+            match token {
+                TokenTree::Ident(name) => self.parse_ident(&name),
+                TokenTree::Punct(punct) => self.parse_punct(&punct),
+                _ => self.error = true,
+            }
+        }
+    }
+
+    fn parse_ident(&mut self, name: &proc_macro2::Ident) {
+        if self.need_comma {
+            self.error = true;
+        }
+        match self.methods.get_mut(&name) {
+            Some(ref mut method) => {
+                let ident = self.ident.clone();
+                let has_this_field_already = method.fields.iter().any(|field| field == &ident);
+                if has_this_field_already {
+                    abort!(self.include_ident.span(), "Field '{}' is already included in method '{}', no need to repeat it.", self.ident, name;
+                        help = "Remove the repeated entries.");
+                }
+                method.fields.push(ident);
+                self.need_comma = true;
+            }
+            None => self.error = true,
+        }
+        self.correct_fns.push(name.clone());
+    }
+
+    fn parse_punct(&mut self, punct: &proc_macro2::Punct) {
+        if self.need_comma && punct.to_string() == "," {
+            self.need_comma = false;
+        } else {
+            self.error = true;
+        }
+    }
+}
+
+fn read_attr_ident(attr: &syn::Attribute, ident: &proc_macro2::Ident, methods: &mut HashMap<syn::Ident, DeclaredFunction>) {
+    let segments: Vec<_> = attr
+        .path
+        .segments
+        .iter()
+        .filter_map(|segment| {
+            if segment.ident == INCLUDE_FIELD {
+                Some(segment.ident.clone())
+            } else {
+                None
+            }
+        })
+        .collect();
+    let include_ident = match segments.len() {
+        0 => return,
+        1 => &segments[0],
+        // @TODO Not sure if this condition can actually happen, not covered in tests yet.
+        _ => abort!(
+            segments[0].span(),
+            "Wrong syntax, used multiple '{}' in same attribute.",
+            INCLUDE_FIELD
+        ),
+    };
+
+    FieldParser::new(methods, ident, include_ident).parse(attr.tokens.clone());
 }
 
 fn make_method_tokens(props: &DeclaredFunction) -> proc_macro2::TokenStream {
