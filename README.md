@@ -95,7 +95,7 @@ With Cargo, you can add this line to your Cargo.toml:
 
 ```toml
 [dependencies]
-arraygen = "0.1.14"
+arraygen = "0.1.16"
 ```
 
 ## About the Syntax
