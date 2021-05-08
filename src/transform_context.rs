@@ -5,6 +5,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use proc_macro_error::*;
 use quote::quote;
+use quote::ToTokens;
 use std::collections::HashMap;
 
 pub struct TransformContext {
@@ -99,12 +100,28 @@ fn read_methods(attrs: Vec<syn::Attribute>) -> HashMap<syn::Ident, DeclaredFunct
 
 fn read_fields(fields: &syn::Fields, methods: &mut HashMap<syn::Ident, DeclaredFunction>) {
     for field in fields.iter() {
+        read_select_field_implicit(field, methods);
         if field.attrs.is_empty() {
             continue;
         }
         if let Some(ref ident) = field.ident {
             for attr in field.attrs.iter() {
                 read_attr_ident(&attr, ident, methods);
+            }
+        }
+    }
+}
+
+fn read_select_field_implicit(field: &syn::Field, methods: &mut HashMap<syn::Ident, DeclaredFunction>) {
+    let ident = match field.ident {
+        Some(ref ident) => ident,
+        _ => return,
+    };
+    for method in methods.values_mut() {
+        for ty in method.implicit_select_all_tys.iter() {
+            if ty.to_string() == field.ty.to_token_stream().to_string() {
+                method.fields.push(ident.clone());
+                break;
             }
         }
     }

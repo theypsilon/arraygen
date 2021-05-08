@@ -4,6 +4,7 @@ fn main() {
     read_prices();
     to_lowercase();
     call_trait_objects();
+    implicit_select_all();
 }
 
 fn read_prices() {
@@ -109,4 +110,50 @@ struct Animals {
     tiger: Cat,
     #[in_array(get_animals)]
     bacon: Pig,
+}
+
+fn implicit_select_all() {
+    let prices = ImplicitPrices {
+        water: 2.0,
+        oil: 4.0,
+        tomato: 3.0,
+        chocolate: 5.0,
+    };
+
+    println!(
+        "Sum of all implicit prices: {}",
+        prices.get_all_prices().iter().sum::<f64>()
+    );
+
+    let animals = ImplicitAnimals {
+        dogo: Dog {},
+        tiger: Cat {},
+        bacon: Pig {},
+    };
+
+    let talk = animals
+        .get_animals()
+        .iter()
+        .map(|animal| animal.talk())
+        .collect::<Vec<&'static str>>()
+        .join(", ");
+
+    println!("Implicit animals say: {}", talk);
+}
+
+#[derive(Arraygen)]
+#[gen_array(fn get_all_prices: f64, implicit_select_all: f64)]
+struct ImplicitPrices {
+    pub water: f64,
+    pub oil: f32,
+    pub tomato: f32,
+    pub chocolate: f32,
+}
+
+#[derive(Arraygen)]
+#[gen_array(fn get_animals: &dyn Animal, implicit_select_all: Dog, Cat, Pig)]
+struct ImplicitAnimals {
+    bacon: Pig,
+    dogo: Dog,
+    tiger: Cat,
 }

@@ -58,6 +58,7 @@ use transform_context::TransformContext;
 const DERIVE_NAME: &str = "Arraygen";
 const DECL_FN_NAME: &str = "gen_array";
 const FIELD_SELECTOR_NAME: &str = "in_array";
+const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 
 /// The `Arraygen` derive allows you to use the attribute `gen_array` at the struct level, and the attribute `in_array` in each contained field.
 ///
