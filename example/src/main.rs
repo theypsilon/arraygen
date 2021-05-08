@@ -6,6 +6,20 @@ fn main() {
     call_trait_objects();
 }
 
+fn read_prices() {
+    let prices = Prices {
+        water: 1.0,
+        oil: 3.0,
+        tomato: 2.0,
+        chocolate: 4.0,
+    };
+
+    println!(
+        "Sum of all prices: {}",
+        prices.get_all_prices().iter().sum::<f32>()
+    );
+}
+
 #[derive(Arraygen)]
 #[gen_array(fn get_all_prices: f32)]
 struct Prices {
@@ -19,18 +33,17 @@ struct Prices {
     pub chocolate: f32,
 }
 
-fn read_prices() {
-    let prices = Prices {
-        water: 1.0,
-        oil: 3.0,
-        tomato: 2.0,
-        chocolate: 4.0,
+fn to_lowercase() {
+    let mut person = Person {
+        first_name: "ADa".into(),
+        last_name: "LoVElaCE".into(),
     };
 
-    println!(
-        "Sum of all prices: {}",
-        prices.get_all_prices().iter().sum::<f32>()
-    );
+    for name in person.get_names().iter_mut() {
+        **name = name.to_lowercase();
+    }
+
+    println!("Lowercase Ada name is: {}", person);
 }
 
 #[derive(Arraygen)]
@@ -48,17 +61,21 @@ impl std::fmt::Display for Person {
     }
 }
 
-fn to_lowercase() {
-    let mut person = Person {
-        first_name: "ADa".into(),
-        last_name: "LoVElaCE".into(),
+fn call_trait_objects() {
+    let animals = Animals {
+        dogo: Dog {},
+        tiger: Cat {},
+        bacon: Pig {},
     };
 
-    for name in person.get_names().iter_mut() {
-        **name = name.to_lowercase();
-    }
+    let talk = animals
+        .get_animals()
+        .iter()
+        .map(|animal| animal.talk())
+        .collect::<Vec<&'static str>>()
+        .join(", ");
 
-    println!("Lowercase Ada name is: {}", person);
+    println!("Animals say: {}", talk);
 }
 
 trait Animal {
@@ -92,21 +109,4 @@ struct Animals {
     tiger: Cat,
     #[in_array(get_animals)]
     bacon: Pig,
-}
-
-fn call_trait_objects() {
-    let animals = Animals {
-        dogo: Dog {},
-        tiger: Cat {},
-        bacon: Pig {},
-    };
-
-    let talk = animals
-        .get_animals()
-        .iter()
-        .map(|animal| animal.talk())
-        .collect::<Vec<&'static str>>()
-        .join(", ");
-
-    println!("Animals say: {}", talk);
 }
