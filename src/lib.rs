@@ -253,6 +253,38 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///
 /// With ad-hoc traits and `Arraygen` is very easy to generalize common transformations with simple one-liners.
 ///
+///
+/// # Implicitly selection Fields by their Types
+///
+/// You may omit entirely the `in_array` attribute if you use the `implicit_select_all` clause in your `gen_array` declarations.
+///
+/// ```ignore
+/// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all: MatchingFieldTypes)]
+/// ```
+///
+/// You may place either a single type in your `implicit_select_all` clause or a list of comma-separated types. 
+/// 
+/// ```rust
+/// # use arraygen::Arraygen;
+/// #[derive(Arraygen)]
+/// #[gen_array(fn get_all_prices: f32, implicit_select_all: f32)]
+/// struct ImplicitPrices {
+///     pub water: f32,
+///     pub oil: f32,
+///     pub tomato: f32,
+///     pub chocolate: f32,
+/// }
+/// 
+/// let prices = ImplicitPrices {
+///     water: 2.0,
+///     oil: 4.0,
+///     tomato: 3.0,
+///     chocolate: 5.0,
+/// };
+/// 
+/// assert_eq!(prices.get_all_prices().iter().sum::<f32>(), 14.0);
+/// ```
+///
 
 #[proc_macro_error]
 #[proc_macro_derive(Arraygen, attributes(gen_array, in_array))]

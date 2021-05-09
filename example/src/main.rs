@@ -113,6 +113,11 @@ struct Animals {
 }
 
 fn implicit_select_all() {
+    implicit_select_all_prices();
+    implicit_select_all_animals();
+}
+
+fn implicit_select_all_prices() {
     let prices = ImplicitPrices {
         water: 2.0,
         oil: 4.0,
@@ -122,9 +127,20 @@ fn implicit_select_all() {
 
     println!(
         "Sum of all implicit prices: {}",
-        prices.get_all_prices().iter().sum::<f64>()
+        prices.get_all_prices().iter().sum::<f32>()
     );
+}
 
+#[derive(Arraygen)]
+#[gen_array(fn get_all_prices: f32, implicit_select_all: f32)]
+struct ImplicitPrices {
+    pub water: f32,
+    pub oil: f32,
+    pub tomato: f32,
+    pub chocolate: f32,
+}
+
+fn implicit_select_all_animals() {
     let animals = ImplicitAnimals {
         dogo: Dog {},
         tiger: Cat {},
@@ -139,15 +155,6 @@ fn implicit_select_all() {
         .join(", ");
 
     println!("Implicit animals say: {}", talk);
-}
-
-#[derive(Arraygen)]
-#[gen_array(fn get_all_prices: f64, implicit_select_all: f64)]
-struct ImplicitPrices {
-    pub water: f64,
-    pub oil: f32,
-    pub tomato: f32,
-    pub chocolate: f32,
 }
 
 #[derive(Arraygen)]

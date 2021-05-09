@@ -172,4 +172,26 @@ mod tests {
         assert_eq!(sut.get_ui_controllers_mut().len(), 1);
         assert_eq!(sut.get_ui_controllers().len(), 1);
     }
+
+    #[test]
+    fn test_arraygen___implicit_select_all_on_3_f32___returns_all_of_them() {
+
+        #[derive(Arraygen)]
+        #[gen_array(fn get_all_prices: f32, implicit_select_all: f32)]
+        struct ImplicitPrices {
+            pub water: f32,
+            pub oil: f32,
+            pub tomato: f32,
+            pub chocolate: f32,
+        }
+
+        let prices = ImplicitPrices {
+            water: 2.0,
+            oil: 4.0,
+            tomato: 3.0,
+            chocolate: 5.0,
+        };
+    
+        assert_eq!(prices.get_all_prices().iter().sum::<f32>(), 14.0);
+    }
 }
