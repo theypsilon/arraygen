@@ -1,5 +1,6 @@
-use crate::decl_fn_parsing::{parse_declared_method, DeclaredFunction};
+use crate::decl_fn_parsing::{parse_declared_method, CastKind, DeclaredFunction};
 use crate::field_selector_parsing::FieldParser;
+use crate::utils::OptionExtensions;
 use crate::{DECL_FN_NAME, FIELD_SELECTOR_NAME};
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
@@ -106,20 +107,51 @@ fn read_fields(fields: &syn::Fields, methods: &mut HashMap<syn::Ident, DeclaredF
         }
         if let Some(ref ident) = field.ident {
             for attr in field.attrs.iter() {
-                read_attr_ident(&attr, ident, methods);
+                read_attr_ident(&attr, ident, &field.ty, methods);
             }
         }
     }
 }
 
-fn read_select_field_implicit(field: &syn::Field, methods: &mut HashMap<syn::Ident, DeclaredFunction>) {
+fn read_select_field_implicit(
+    field: &syn::Field,
+    methods: &mut HashMap<syn::Ident, DeclaredFunction>,
+) {
     let ident = match field.ident {
         Some(ref ident) => ident,
         _ => return,
     };
+
+    let mut field_ty: Option<Vec<String>> = None;
+
     for method in methods.values_mut() {
-        for ty in method.implicit_select_all_tys.iter() {
-            if ty.to_string() == field.ty.to_token_stream().to_string() {
+        let implicit_tys = &method.implicit_select_all_tys;
+        if implicit_tys.is_empty() {
+            continue;
+        }
+        let field_ty = match field_ty {
+            Some(ref token_stream) => token_stream,
+            None => field_ty.insert_stable(
+                field
+                    .ty
+                    .to_token_stream()
+                    .into_iter()
+                    .map(|token| token.to_string())
+                    .collect(),
+            ),
+        };
+        for implicit_ty in implicit_tys.iter() {
+            if field_ty.len() != implicit_ty.len() {
+                continue;
+            }
+            let mut matches_type = !implicit_ty.is_empty();
+            for i in 0..implicit_ty.len() {
+                if implicit_ty[i] != field_ty[i] && implicit_ty[i] != "?" {
+                    matches_type = false;
+                    break;
+                }
+            }
+            if matches_type {
                 method.fields.push(ident.clone());
                 break;
             }
@@ -130,6 +162,7 @@ fn read_select_field_implicit(field: &syn::Field, methods: &mut HashMap<syn::Ide
 fn read_attr_ident(
     attr: &syn::Attribute,
     ident: &proc_macro2::Ident,
+    ty: &syn::Type,
     methods: &mut HashMap<syn::Ident, DeclaredFunction>,
 ) {
     let segments: Vec<_> = attr
@@ -155,7 +188,7 @@ fn read_attr_ident(
         ),
     };
 
-    FieldParser::new(methods, ident, include_ident).parse(attr.tokens.clone());
+    FieldParser::new(methods, ident, ty, include_ident).parse(attr.tokens.clone());
 }
 
 fn make_impl_fns(methods: HashMap<syn::Ident, DeclaredFunction>) -> Vec<TokenTree> {
@@ -194,10 +227,29 @@ fn make_method_tokens(props: &DeclaredFunction) -> proc_macro2::TokenStream {
     } else {
         quote! {}
     };
+    let field_idents = field_idents.iter().map(|ident| {
+        if props.casts.is_empty() {
+            quote! { #refa self.#ident }
+        } else if let Some((field, source_ty, target_ty, cast_kind)) = props.casts.iter().find(|(field, _, _, _)| ident == field) {
+            match cast_kind {
+                CastKind::SafeCast => quote! { #refa self.#field as #target_ty },
+                CastKind::UnsafeTransmute => {
+                    let refb = match source_ty {
+                        syn::Type::Reference(_) if props.is_ref => quote! {},
+                        _ => quote! { #refa }
+                    };
+                    quote ! { unsafe { std::mem::transmute::<#refb #source_ty, #target_ty>(#refa self.#field) } }
+                }
+            }
+        } else {
+            quote! { #refa self.#ident }
+        }
+    });
+
     quote! {
         #[inline(always)]
         #vis #body (& #muta self) -> [#return_type; #count] {
-            [#(#refa self.#field_idents),*]
+            [#(#field_idents),*]
         }
     }
 }

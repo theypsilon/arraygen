@@ -1,9 +1,14 @@
-use crate::{DECL_FN_NAME, DERIVE_NAME, IMPLICIT_SELECT_ALL_NAME};
+use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
 use proc_macro2::TokenTree;
 use proc_macro_error::*;
 use quote::quote;
 
 #[derive(Debug)]
+pub enum CastKind {
+    SafeCast,
+    UnsafeTransmute,
+}
+
 pub struct DeclaredFunction {
     pub name: syn::Ident,
     pub vis: proc_macro2::TokenStream,
@@ -12,7 +17,8 @@ pub struct DeclaredFunction {
     pub is_mut: bool,
     pub is_ref: bool,
     pub fields: Vec<syn::Ident>,
-    pub implicit_select_all_tys: Vec<proc_macro2::TokenStream>,
+    pub implicit_select_all_tys: Vec<Vec<String>>,
+    pub casts: Vec<(syn::Ident, syn::Type, proc_macro2::TokenStream, CastKind)>,
 }
 
 pub fn parse_declared_method(
@@ -45,7 +51,7 @@ struct DeclaredMethodParser {
     body: Vec<TokenTree>,
     implicit_select_all_tys: Vec<Vec<TokenTree>>,
     implicit_select_all_cur_ty: usize,
-    implicit_select_all_inserted_valid_comma: bool
+    implicit_select_all_inserted_valid_comma: bool,
 }
 
 impl DeclaredMethodParser {
@@ -58,7 +64,7 @@ impl DeclaredMethodParser {
             body: vec![],
             implicit_select_all_tys: vec![],
             implicit_select_all_cur_ty: 0,
-            implicit_select_all_inserted_valid_comma: false
+            implicit_select_all_inserted_valid_comma: false,
         }
     }
     pub fn parse(
@@ -81,11 +87,23 @@ impl DeclaredMethodParser {
                 is_mut,
                 is_ref,
                 fields: vec![],
-                implicit_select_all_tys: self.implicit_select_all_tys.clone().into_iter().map(|ty| ty.into_iter().collect()).collect()
+                casts: vec![],
+                implicit_select_all_tys: self
+                    .implicit_select_all_tys
+                    .iter()
+                    .map(|tokens| tokens.iter().map(|ty| ty.to_string()).collect())
+                    .collect(),
             };
             if !decl_fn.implicit_select_all_tys.is_empty() {
-                let slice: Vec<String> = decl_fn.implicit_select_all_tys.iter().map(|tokens| tokens.to_string()).collect();
-                if let Some(duplicated) = (1..slice.len()).position(|i| slice[i..].contains(&slice[i - 1])) {
+                // @TODO Optimize
+                let slice: Vec<String> = decl_fn
+                    .implicit_select_all_tys
+                    .iter()
+                    .map(|tokens| tokens.join(""))
+                    .collect();
+                if let Some(duplicated) =
+                    (1..slice.len()).position(|i| slice[i..].contains(&slice[i - 1]))
+                {
                     abort!(self.implicit_select_all_tys[duplicated][0].span(), "'{}' tried to declare a method '{}' with a '{}' clause, but it contained a duplicated return type '{}'", DECL_FN_NAME, decl_fn.name, IMPLICIT_SELECT_ALL_NAME, slice[duplicated];
                         help = "Remove one of the '{}' from the '{}' clause", slice[duplicated], IMPLICIT_SELECT_ALL_NAME;);
                 }
@@ -102,21 +120,17 @@ impl DeclaredMethodParser {
             }
             FunctionParsing::Error => {
                 if let Some(decl_fn) = decl_fn {
-                    abort!(decl_fn.name.span(), "'{}' tried to declare a method '{}', but the return type syntax was wrong.", DECL_FN_NAME, decl_fn.name;
+                    abort!(decl_fn.name.span(), "'{}' tried to declare a method '{}', but the return type syntax was wrong", DECL_FN_NAME, decl_fn.name;
                         help = "Correct syntax is {}", decl_fn_correct_syntax(&decl_fn););
                 } else {
-                    abort!(gen_array_span, "'{}' was used with the wrong syntax.", DECL_FN_NAME;
+                    abort!(gen_array_span, "'{}' was used with the wrong syntax", DECL_FN_NAME;
                         help = "Correct syntax is {}", decl_fn_correct_syntax_without_name());
                 }
             }
             _ => {}
         }
-        abort!(
-            gen_array_span,
-            "Bug on '{}', contact with the maintainer of {} crate.",
-            DECL_FN_NAME,
-            DERIVE_NAME
-        );
+        abort!(gen_array_span, "'{}' was used with the wrong syntax", DECL_FN_NAME;
+            help = "Correct syntax is {}", decl_fn_correct_syntax_without_name());
     }
     fn parse_tokens(&mut self, tokens: proc_macro2::TokenStream) {
         for token in tokens.into_iter() {
@@ -130,39 +144,50 @@ impl DeclaredMethodParser {
         for token in group.stream().into_iter() {
             match self.search_element {
                 FunctionParsing::ExpectingType => match token {
-                    TokenTree::Punct(comma) if comma.to_string() == "," => self.search_element = FunctionParsing::ExpectingImplicitSelectAllDecl,
+                    TokenTree::Punct(comma) if comma.to_string() == "," => {
+                        self.search_element = FunctionParsing::ExpectingImplicitSelectAllDecl
+                    }
                     _ => self.ty.push(token.clone()),
                 },
                 FunctionParsing::ExpectingImplicitSelectAllDecl => match token {
-                    TokenTree::Ident(ref ident) if ident.to_string() == IMPLICIT_SELECT_ALL_NAME => self.search_element = FunctionParsing::ExpectingImplicitSelectAllColon,
+                    TokenTree::Ident(ref ident) if *ident == IMPLICIT_SELECT_ALL_NAME => {
+                        self.search_element = FunctionParsing::ExpectingImplicitSelectAllColon
+                    }
                     _ => self.search_element = FunctionParsing::Error,
                 },
                 FunctionParsing::ExpectingImplicitSelectAllColon => match token {
-                    TokenTree::Punct(colon) if colon.to_string() == ":" => self.search_element = FunctionParsing::ExpectingImplicitSelectAllTypes,
+                    TokenTree::Punct(colon) if colon.to_string() == ":" => {
+                        self.search_element = FunctionParsing::ExpectingImplicitSelectAllTypes
+                    }
                     _ => self.search_element = FunctionParsing::Error,
                 },
                 FunctionParsing::ExpectingImplicitSelectAllTypes => match token {
-                    TokenTree::Punct(comma) if comma.to_string() == "," && !self.implicit_select_all_inserted_valid_comma => {
+                    TokenTree::Punct(comma)
+                        if comma.to_string() == ","
+                            && !self.implicit_select_all_inserted_valid_comma =>
+                    {
                         self.implicit_select_all_inserted_valid_comma = true;
                         self.implicit_select_all_cur_ty += 1;
-                    },
-                    TokenTree::Punct(comma) if comma.to_string() == "," => self.search_element = FunctionParsing::Error,
+                    }
+                    TokenTree::Punct(comma) if comma.to_string() == "," => {
+                        self.search_element = FunctionParsing::Error
+                    }
                     _ => {
-                        while self.implicit_select_all_tys.len() <= self.implicit_select_all_cur_ty {
+                        while self.implicit_select_all_tys.len() <= self.implicit_select_all_cur_ty
+                        {
                             self.implicit_select_all_tys.push(vec![]);
                         }
-                        self.implicit_select_all_tys[self.implicit_select_all_cur_ty].push(token.clone());
+                        self.implicit_select_all_tys[self.implicit_select_all_cur_ty]
+                            .push(token.clone());
                         self.implicit_select_all_inserted_valid_comma = false;
                     }
                 },
-                _ => {
-                    match token {
-                        TokenTree::Ident(ref ident) => self.parse_ident(ident, &token),
-                        TokenTree::Group(_) => self.parse_group(&token),
-                        TokenTree::Punct(ref punct) => self.parse_punct(punct),
-                        _ => self.search_element = FunctionParsing::Error,
-                    }
-                }
+                _ => match token {
+                    TokenTree::Ident(ref ident) => self.parse_ident(ident, &token),
+                    TokenTree::Group(_) => self.parse_group(&token),
+                    TokenTree::Punct(ref punct) => self.parse_punct(punct),
+                    _ => self.search_element = FunctionParsing::Error,
+                },
             }
         }
     }

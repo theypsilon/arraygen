@@ -262,8 +262,8 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all: MatchingFieldTypes)]
 /// ```
 ///
-/// You may place either a single type in your `implicit_select_all` clause or a list of comma-separated types. 
-/// 
+/// You may place either a single type in your `implicit_select_all` clause or a list of comma-separated types.
+///
 /// ```rust
 /// # use arraygen::Arraygen;
 /// #[derive(Arraygen)]
@@ -274,14 +274,14 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///     pub tomato: f32,
 ///     pub chocolate: f32,
 /// }
-/// 
+///
 /// let prices = ImplicitPrices {
 ///     water: 2.0,
 ///     oil: 4.0,
 ///     tomato: 3.0,
 ///     chocolate: 5.0,
 /// };
-/// 
+///
 /// assert_eq!(prices.get_all_prices().iter().sum::<f32>(), 14.0);
 /// ```
 ///
@@ -295,3 +295,4 @@ pub fn arraygen(input: TokenStream) -> TokenStream {
 mod decl_fn_parsing;
 mod field_selector_parsing;
 mod transform_context;
+mod utils;

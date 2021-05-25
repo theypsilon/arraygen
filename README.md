@@ -106,6 +106,10 @@ arraygen = "0.2.0"
 
 I'm open to change the syntax for the 1.0 version. Participate in the issue [Syntax Proposals](https://github.com/theypsilon/arraygen/issues/1) to give your opinion on this matter.
 
+## Known Problems
+
+It doesn't work with pointers yet, just references.
+
 ## GettersByType
 
 This crate is heavily inspired by [GettersByType](https://github.com/theypsilon/getters-by-type-rs) which is another derive that allows you

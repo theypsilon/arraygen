@@ -2,7 +2,7 @@ extern crate arraygen;
 
 use arraygen::Arraygen;
 
-#[derive(Arraygen)] //~WARNING 'in_array' shouldn't contain those tokens.
+#[derive(Arraygen)] //~WARNING 'in_array' shouldn't contain these tokens.
 struct Empty{}
 
 fn main() {
