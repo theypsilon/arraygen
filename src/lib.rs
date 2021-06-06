@@ -49,11 +49,11 @@
 //! }
 //! ```
 
+#![allow(clippy::eval_order_dependence)]
+
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro_error::*;
-use transform_context::TransformContext;
 
 const DERIVE_NAME: &str = "Arraygen";
 const DECL_FN_NAME: &str = "gen_array";
@@ -286,13 +286,16 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// ```
 ///
 
-#[proc_macro_error]
 #[proc_macro_derive(Arraygen, attributes(gen_array, in_array))]
 pub fn arraygen(input: TokenStream) -> TokenStream {
-    TransformContext::new(input, DERIVE_NAME).transform_ast()
+    transform_context::transform_ast(input)
 }
 
-mod decl_fn_parsing;
-mod field_selector_parsing;
 mod transform_context;
 mod utils;
+mod casting;
+mod parse_derive_arraygen;
+mod parse_gen_array;
+mod parse_in_array;
+mod parse_common;
+

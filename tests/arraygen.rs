@@ -209,7 +209,7 @@ mod tests {
         impl All for C {}
 
         #[derive(Arraygen)]
-        #[gen_array(fn all: &dyn All, implicit_select_all: ?)]
+        #[gen_array(fn all: &dyn All, implicit_select_all: _)]
         struct Sut {
             pub a: A,
             pub b: B,
@@ -232,7 +232,7 @@ mod tests {
         impl<T> OptionTrait for Option<T> {}
 
         #[derive(Arraygen)]
-        #[gen_array(fn options: &dyn OptionTrait, implicit_select_all: Option<?>)]
+        #[gen_array(fn options: &dyn OptionTrait, implicit_select_all: Option<_>)]
         struct Sut {
             pub a: Option<i32>,
             pub b: Option<bool>,

@@ -1,6 +1,6 @@
 [package]
 name = "arraygen"
-version = "0.2.0"
+version = "0.3.0-alpha"
 authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
 edition = "2018"
@@ -20,8 +20,7 @@ proc-macro = true
 [dependencies]
 quote = "1.0.9"
 proc-macro2 = "1.0.26"
-proc-macro-error = "1.0.4"
-syn = "1.0.72"
+syn = { version = "1.0.72", features = ["extra-traits"] }
 
 [dev-dependencies]
 compiletest_rs = "0.7.0"
