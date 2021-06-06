@@ -254,7 +254,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// With ad-hoc traits and `Arraygen` is very easy to generalize common transformations with simple one-liners.
 ///
 ///
-/// # Implicitly selection Fields by their Types
+/// # Implicit selection of Fields by their Types
 ///
 /// You may omit entirely the `in_array` attribute if you use the `implicit_select_all` clause in your `gen_array` declarations.
 ///

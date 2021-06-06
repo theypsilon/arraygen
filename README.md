@@ -88,6 +88,10 @@ It is also possible to entirely omit the attribute `in_array` with the use of an
 
 Trait Objects are fully supported, check the [Trait Objects section in the documentation](https://docs.rs/arraygen/0.2.0/arraygen/derive.Arraygen.html#trait-objects) to see a few working examples.
 
+#### Implicit selection of Fields by their Types
+
+With the clause `implicit_select_all`, you may select fields without using `in_array`, check [this section in the documentation](https://docs.rs/arraygen/0.2.0/arraygen/derive.Arraygen.html#implicitly-selection-fields-by-their-types) to see an example.
+
 
 ## Documentation
 
