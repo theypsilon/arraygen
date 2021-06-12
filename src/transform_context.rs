@@ -1,13 +1,14 @@
-use crate::casting::CastKind;
-use crate::parse_derive_arraygen::DeriveArraygen;
-use crate::parse_gen_array::GenArray;
-use crate::{DECL_FN_NAME, DERIVE_NAME};
 use proc_macro::TokenStream;
 use proc_macro2::TokenTree;
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse_macro_input;
 use syn::{Ident, Type};
+
+use crate::parse_decorator::CastKind;
+use crate::parse_derive_arraygen::DeriveArraygen;
+use crate::parse_gen_array::GenArray;
+use crate::{DECL_FN_NAME, DERIVE_NAME};
 
 pub fn transform_ast(input: TokenStream) -> TokenStream {
     let arraygen = parse_macro_input!(input as DeriveArraygen);

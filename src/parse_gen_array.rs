@@ -1,12 +1,14 @@
-use crate::casting::CastKind;
-use crate::parse_common::{single_parse_outer_attribute, equal_types};
-use crate::parse_in_array::InArrayElement;
-use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::token;
 use syn::{bracketed, parenthesized, Error, Ident, Path, Token, Type, Visibility};
+
+use crate::parse_attribute::single_parse_outer_attribute;
+use crate::parse_decorator::{CastKind, Decorator};
+use crate::parse_in_array::InArrayElement;
+use crate::types::are_matching_types;
+use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
 
 pub struct GenArray {
     pub vis: Visibility,
@@ -14,7 +16,8 @@ pub struct GenArray {
     pub fn_ty: Type,
     pub is_mut: bool,
     pub is_ref: bool,
-    pub implicit_select_all: Vec<Type>,
+    pub implicit_select_all_tys: Vec<Type>,
+    pub implicit_select_all_decorator: Decorator,
     pub casts: Vec<(syn::Ident, syn::Type, proc_macro2::TokenStream, CastKind)>,
     pub fields: Vec<InArrayElement>,
 }
@@ -69,7 +72,8 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
         (false, false)
     };
 
-    let mut implicit_select_all = vec![];
+    let mut implicit_select_all_tys = vec![];
+    let mut implicit_select_all_decorator = Decorator::new();
 
     if content.peek(Token![,]) && content.peek2(syn::Ident) {
         let _: Token![,] = content.parse()?;
@@ -77,20 +81,33 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
         if implicit != IMPLICIT_SELECT_ALL_NAME {
             return Err(content.error(format!("clause '{}' not recognised", implicit)));
         }
+
+        implicit_select_all_decorator = content.parse::<Decorator>()?;
+        if implicit_select_all_decorator.override_implicit {
+            return Err(Error::new_spanned(
+                implicit,
+                format!(
+                    "{} method '{}' contains {} clause with forbidden decorator 'override_implicit'",
+                    DECL_FN_NAME,
+                    fn_name,
+                    IMPLICIT_SELECT_ALL_NAME
+                ),
+            ));
+        }
+
         let _: Token![:] = content.parse::<Token![:]>()?;
-        implicit_select_all = content
+        implicit_select_all_tys = content
             .parse_terminated::<Type, Token![,]>(Type::parse)?
             .into_iter()
             .collect::<Vec<Type>>();
 
-        if implicit_select_all.is_empty() {
+        if implicit_select_all_tys.is_empty() {
             return Err(content.error("missing type to select"));
         }
 
-        for (i, ty_left) in implicit_select_all.iter().enumerate() {
-            for j in i + 1 .. implicit_select_all.len() {
-                let ty_right = &implicit_select_all[j];
-                if equal_types(ty_left, ty_right) || equal_types(ty_right, ty_left) {
+        for (i, ty_left) in implicit_select_all_tys.iter().enumerate() {
+            for ty_right in implicit_select_all_tys.iter().skip(i + 1) {
+                if are_matching_types(ty_left, ty_right) {
                     return Err(Error::new_spanned(
                         ty_right,
                         format!(
@@ -112,7 +129,8 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
         fn_ty,
         is_mut,
         is_ref,
-        implicit_select_all,
+        implicit_select_all_tys,
+        implicit_select_all_decorator,
         casts: vec![],
         fields: vec![],
     })

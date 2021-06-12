@@ -1,19 +1,27 @@
-use crate::casting::CastKind;
-use crate::parse_common::single_parse_outer_attribute;
-use crate::FIELD_SELECTOR_NAME;
 use syn::parse::{ParseStream, Result};
 use syn::token;
-use syn::{braced, bracketed, parenthesized, Error, Ident, Path, Token, Type, Visibility};
+use syn::{bracketed, parenthesized, Ident, Path, Token, Type, Visibility};
+
+use crate::parse_attribute::single_parse_outer_attribute;
+use crate::parse_decorator::{CastKind, Decorator};
+use crate::FIELD_SELECTOR_NAME;
+
+#[derive(PartialEq)]
+pub enum InArrayElementKind {
+    Implicit,
+    InArray,
+}
 
 pub struct InArrayElement {
     pub ident: Ident,
     pub ty: Type,
     pub cast: Option<CastKind>,
+    pub kind: InArrayElementKind,
 }
 
 pub struct InArrayAttributeEntry {
     pub ident: Ident,
-    pub decorator: Option<CastKind>,
+    pub decorator: Decorator,
 }
 
 pub struct InArrayAttribute {
@@ -81,31 +89,8 @@ pub fn parse_single_in_array_attribute_body(input: ParseStream) -> Result<InArra
 }
 
 pub fn parse_attribute_entry(input: ParseStream) -> Result<InArrayAttributeEntry> {
-    let ident: Ident = input.parse()?;
-    if input.peek(token::Brace) {
-        let content;
-        let _ = braced!(content in input);
-        let deco_ident = content.parse::<Ident>()?;
-        let decorator = match deco_ident.to_string().as_ref() {
-            "cast" => CastKind::SafeCast,
-            "unsafe_transmute" => CastKind::UnsafeTransmute,
-            decorator => {
-                return Err(Error::new_spanned(
-                    deco_ident,
-                    format!(
-                        "{} doesn't allow '{}' as decorator",
-                        FIELD_SELECTOR_NAME, decorator
-                    ),
-                ))
-            }
-        };
-        return Ok(InArrayAttributeEntry {
-            ident,
-            decorator: Some(decorator),
-        });
-    }
     Ok(InArrayAttributeEntry {
-        ident,
-        decorator: None,
+        ident: input.parse()?,
+        decorator: input.parse()?,
     })
 }

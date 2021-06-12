@@ -4,9 +4,12 @@ use syn::parse::{Parse, ParseStream, Result};
 use syn::token;
 use syn::{braced, Error, Generics, Ident, Token, Visibility, WhereClause};
 
-use crate::parse_common::{parse_inner_attributes, equal_types};
+use crate::parse_attribute::parse_inner_attributes;
 use crate::parse_gen_array::{parse_gen_arrays, GenArray};
-use crate::parse_in_array::{parse_in_array_fields, InArrayElement, InArrayField};
+use crate::parse_in_array::{
+    parse_in_array_fields, InArrayElement, InArrayElementKind, InArrayField,
+};
+use crate::types::ty_inferred_by;
 
 pub struct DeriveArraygen {
     pub gen_arrays: HashMap<Ident, GenArray>,
@@ -74,12 +77,13 @@ pub(crate) fn parse_braced_struct(
         .into_iter()
         .for_each(|iaf| {
             for (_, ga) in gen_arrays.iter_mut() {
-                for implicit_ty in ga.implicit_select_all.iter() {
-                    if equal_types(&iaf.ty, implicit_ty) {
+                for implicit_ty in ga.implicit_select_all_tys.iter() {
+                    if ty_inferred_by(&iaf.ty, implicit_ty) {
                         ga.fields.push(InArrayElement {
                             ident: iaf.ident.clone(),
                             ty: iaf.ty.clone(),
-                            cast: None,
+                            cast: ga.implicit_select_all_decorator.cast.clone(),
+                            kind: InArrayElementKind::Implicit
                         });
                     }
                 }
@@ -87,7 +91,8 @@ pub(crate) fn parse_braced_struct(
             for attr in iaf.attrs.iter() {
                 for entry in attr.entries.iter() {
                     if let Some(ga) = gen_arrays.get_mut(&entry.ident) {
-                        if ga.fields.iter().any(|iae| iae.ident == iaf.ident) {
+                        let iae = ga.fields.iter().find(|iae| iae.ident == iaf.ident);
+                        if matches!(iae, Some(iae) if iae.kind != InArrayElementKind::Implicit || (iae.kind == InArrayElementKind::Implicit && !entry.decorator.override_implicit)) {
                             err = Some(Error::new_spanned(
                                 entry.ident.clone(),
                                 format!(
@@ -98,10 +103,15 @@ pub(crate) fn parse_braced_struct(
                                 ),
                             ));
                         } else {
+                            if let Some(ident) = iae.map(|iae| iae.ident.clone()) {
+                                ga.fields.retain(|field| field.ident != ident);
+                            }
+
                             ga.fields.push(InArrayElement {
                                 ident: iaf.ident.clone(),
                                 ty: iaf.ty.clone(),
-                                cast: entry.decorator.clone(),
+                                cast: entry.decorator.cast.clone(),
+                                kind: InArrayElementKind::InArray
                             });
                         }
                     } else {

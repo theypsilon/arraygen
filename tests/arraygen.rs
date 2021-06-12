@@ -250,7 +250,6 @@ mod tests {
 
     #[test]
     fn test_implicit_select_all___given_result_with_wildcard___returns_all_result_fields() {
-
         #[derive(Arraygen)]
         #[gen_array(fn options: &Result<i32, std::fmt::Error>, implicit_select_all: Result<_, std::fmt::Error>)]
         struct Sut {
@@ -258,10 +257,7 @@ mod tests {
             pub b: f32,
         }
 
-        let actual = Sut {
-            a: Ok(1),
-            b: 3.0,
-        };
+        let actual = Sut { a: Ok(1), b: 3.0 };
 
         assert_eq!(actual.options().len(), 1);
     }
@@ -335,5 +331,22 @@ mod tests {
         let actual = Sut { a: -1 };
 
         assert_eq!(actual.number_refs().len(), 1);
+    }
+
+    #[test]
+    fn test_implicit_select_all___with_overrided_field___compiles_correctly() {
+        #[derive(Arraygen)]
+        #[gen_array(fn my_array: f32, implicit_select_all: f32)]
+        struct _Sut1 {
+            #[in_array(my_array { override_implicit, cast })]
+            pub a: i32,
+        }
+
+        #[derive(Arraygen)]
+        #[gen_array(fn my_array: f32, implicit_select_all: f32)]
+        struct _Sut2 {
+            #[in_array(my_array { cast, override_implicit })]
+            pub a: i32,
+        }
     }
 }
