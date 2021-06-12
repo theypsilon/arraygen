@@ -291,11 +291,10 @@ pub fn arraygen(input: TokenStream) -> TokenStream {
     transform_context::transform_ast(input)
 }
 
-mod transform_context;
-mod utils;
 mod casting;
+mod parse_common;
 mod parse_derive_arraygen;
 mod parse_gen_array;
 mod parse_in_array;
-mod parse_common;
-
+mod transform_context;
+mod utils;

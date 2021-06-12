@@ -21,6 +21,7 @@ proc-macro = true
 quote = "1.0.9"
 proc-macro2 = "1.0.26"
 syn = { version = "1.0.72", features = ["extra-traits"] }
+regex = "1"
 
 [dev-dependencies]
 compiletest_rs = "0.7.0"

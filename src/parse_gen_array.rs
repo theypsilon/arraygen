@@ -1,12 +1,12 @@
 use crate::casting::CastKind;
-use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
-use crate::parse_in_array::{InArrayElement};
 use crate::parse_common::single_parse_outer_attribute;
+use crate::parse_in_array::InArrayElement;
+use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
 use quote::quote;
 use std::collections::HashMap;
-use syn::{Error, Ident, Token, Visibility, Type, parenthesized, bracketed, Path};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::token;
+use syn::{bracketed, parenthesized, Error, Ident, Path, Token, Type, Visibility};
 
 pub struct GenArray {
     pub vis: Visibility,
@@ -16,7 +16,7 @@ pub struct GenArray {
     pub is_ref: bool,
     pub implicit_select_all: Vec<Type>,
     pub casts: Vec<(syn::Ident, syn::Type, proc_macro2::TokenStream, CastKind)>,
-    pub fields: Vec<InArrayElement>
+    pub fields: Vec<InArrayElement>,
 }
 
 pub fn parse_gen_arrays(input: ParseStream) -> Result<HashMap<Ident, GenArray>> {
@@ -90,12 +90,21 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
         for i in implicit_select_all.iter().enumerate() {
             if implicit_select_all[1..].contains(&implicit_select_all[i.0]) {
                 let duplicated = i.1;
-                return Err(Error::new_spanned(duplicated, format!("{} method '{}' contains {} clause with duplicated '{}' type", DECL_FN_NAME, fn_name, IMPLICIT_SELECT_ALL_NAME, quote!{ #duplicated }.to_string())));
+                return Err(Error::new_spanned(
+                    duplicated,
+                    format!(
+                        "{} method '{}' contains {} clause with duplicated '{}' type",
+                        DECL_FN_NAME,
+                        fn_name,
+                        IMPLICIT_SELECT_ALL_NAME,
+                        quote! { #duplicated }.to_string()
+                    ),
+                ));
             }
         }
     }
 
-    Ok(GenArray{
+    Ok(GenArray {
         vis,
         fn_name,
         fn_ty,
@@ -103,6 +112,6 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
         is_ref,
         implicit_select_all,
         casts: vec![],
-        fields: vec![]
+        fields: vec![],
     })
 }

@@ -1,12 +1,14 @@
 use crate::DECL_FN_NAME;
+use quote::quote;
+use regex::Regex;
 use std::collections::HashMap;
-use syn::{Error, Ident, Token, Visibility, Type, braced, WhereClause, Generics};
 use syn::parse::{Parse, ParseStream, Result};
 use syn::token;
-use quote::quote;
-use crate::parse_gen_array::{GenArray, parse_gen_arrays};
-use crate::parse_in_array::{InArrayField, InArrayElement, parse_in_array_fields};
+use syn::{braced, Error, Generics, Ident, Token, Type, Visibility, WhereClause};
+
 use crate::parse_common::parse_inner_attributes;
+use crate::parse_gen_array::{parse_gen_arrays, GenArray};
+use crate::parse_in_array::{parse_in_array_fields, InArrayElement, InArrayField};
 
 pub struct DeriveArraygen {
     pub gen_arrays: HashMap<Ident, GenArray>,
@@ -22,7 +24,7 @@ impl Parse for DeriveArraygen {
 
         let lookahead = input.lookahead1();
         if !lookahead.peek(Token![struct]) {
-            return Err(lookahead.error());
+            return Err(input.error("derive 'Arraygen' should only be used with braced structs"));
         }
 
         let _ = input.parse::<Token![struct]>()?;
@@ -42,7 +44,10 @@ impl Parse for DeriveArraygen {
     }
 }
 
-pub fn parse_struct(input: ParseStream, gen_arrays: &mut HashMap<Ident, GenArray>) -> Result<Option<WhereClause>> {
+pub fn parse_struct(
+    input: ParseStream,
+    gen_arrays: &mut HashMap<Ident, GenArray>,
+) -> Result<Option<WhereClause>> {
     let mut lookahead = input.lookahead1();
     let mut where_clause = None;
     if lookahead.peek(Token![where]) {
@@ -54,11 +59,14 @@ pub fn parse_struct(input: ParseStream, gen_arrays: &mut HashMap<Ident, GenArray
         parse_braced_struct(input, gen_arrays)?;
         Ok(where_clause)
     } else {
-        Err(lookahead.error())
+        Err(input.error("derive 'Arraygen' should only be used with braced structs"))
     }
 }
 
-pub(crate) fn parse_braced_struct(input: ParseStream, gen_arrays: &mut HashMap<Ident, GenArray>) -> Result<()> {
+pub(crate) fn parse_braced_struct(
+    input: ParseStream,
+    gen_arrays: &mut HashMap<Ident, GenArray>,
+) -> Result<()> {
     let content;
     let _ = braced!(content in input);
     parse_inner_attributes(&content)?;
@@ -73,25 +81,41 @@ pub(crate) fn parse_braced_struct(input: ParseStream, gen_arrays: &mut HashMap<I
                         ga.fields.push(InArrayElement {
                             ident: iaf.ident.clone(),
                             ty: iaf.ty.clone(),
-                            cast: None
+                            cast: None,
                         });
                     }
-                } 
-            } 
+                }
+            }
             for attr in iaf.attrs.iter() {
                 for entry in attr.entries.iter() {
                     if let Some(ga) = gen_arrays.get_mut(&entry.ident) {
                         if ga.fields.iter().any(|iae| iae.ident == iaf.ident) {
-                            err = Some(Error::new_spanned(entry.ident.clone(), format!("Field '{}' is already included in {} method '{}'", iaf.ident.to_string(), DECL_FN_NAME, entry.ident.to_string())));
+                            err = Some(Error::new_spanned(
+                                entry.ident.clone(),
+                                format!(
+                                    "Field '{}' is already included in {} method '{}'",
+                                    iaf.ident.to_string(),
+                                    DECL_FN_NAME,
+                                    entry.ident.to_string()
+                                ),
+                            ));
                         } else {
                             ga.fields.push(InArrayElement {
                                 ident: iaf.ident.clone(),
                                 ty: iaf.ty.clone(),
-                                cast: entry.decorator.clone()
+                                cast: entry.decorator.clone(),
                             });
                         }
                     } else {
-                        err = Some(Error::new_spanned(entry.ident.clone(), format!("{} method '{}' not present but used by field '{}'", DECL_FN_NAME, entry.ident.to_string(), iaf.ident.to_string())));
+                        err = Some(Error::new_spanned(
+                            entry.ident.clone(),
+                            format!(
+                                "{} method '{}' not present but used by field '{}'",
+                                DECL_FN_NAME,
+                                entry.ident.to_string(),
+                                iaf.ident.to_string()
+                            ),
+                        ));
                     }
                 }
             }
@@ -110,42 +134,28 @@ fn equal_types(field_ty: &Type, implicit_ty: &Type) -> bool {
         return true;
     }
 
-    let field_ts = quote! { #field_ty };
-    let implicit_ts = quote! { #implicit_ty };
+    let mut implicit_iter = quote! { #implicit_ty }.into_iter();
 
-    let mut field_iter = field_ts.into_iter();
-    let mut next_field = field_iter.next();
-    let mut can_be_wildcard = true;
-    let mut expecting_closing = false;
-    for implicit_token in implicit_ts.into_iter() {
-        if expecting_closing {
-            if implicit_token.to_string() == ">" {
-                expecting_closing = false;
-                next_field = field_iter.next();
-                continue;
-            }
-        } else if let Some(ref next) = next_field {
-            if implicit_token.to_string() == next.to_string() {
-                next_field = field_iter.next();
-                can_be_wildcard = implicit_token.to_string() == "<";
-                continue;
-            }
-            if can_be_wildcard && implicit_token.to_string() == "_" {
-                can_be_wildcard = false;
-                expecting_closing = true;
-                while let Some(ref next) = next_field {
-                    if next.to_string() == ">" {
-                        break;
-                    }
-                    next_field = field_iter.next();
-                }
-                continue;
-            }
-        }
+    if !implicit_iter.any(|t| matches!(t, proc_macro2::TokenTree::Ident(p) if p == "_")) {
         return false;
     }
 
-    true
+    let implicit_string = implicit_iter
+        .map(|t| t.to_string())
+        .map(|s| if s == "_" { ".+".to_string() } else { s })
+        .collect::<Vec<String>>()
+        .join("");
+
+    let field_string = quote! { #field_ty }
+        .into_iter()
+        .map(|t| t.to_string())
+        .collect::<Vec<String>>()
+        .join("");
+
+    match Regex::new(implicit_string.as_ref()) {
+        Ok(re) => re.is_match(field_string.as_ref()),
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -154,36 +164,122 @@ mod test {
 
     #[test]
     fn equal_types_exactly_same_returns_true() {
-        assert_eq!(equal_types(&syn::parse_str("Option<i32>").unwrap(), &syn::parse_str("Option<i32>").unwrap()), true);
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<i32>").unwrap(),
+                &syn::parse_str("Option<i32>").unwrap()
+            ),
+            true
+        );
     }
 
     #[test]
     fn equal_types_compared_to_wildcard_returns_true() {
-        assert_eq!(equal_types(&syn::parse_str("Option<i32>").unwrap(), &syn::parse_str("_").unwrap()), true);
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<i32>").unwrap(),
+                &syn::parse_str("_").unwrap()
+            ),
+            true
+        );
     }
 
     #[test]
     fn equal_types_compared_to_option_wildcard_returns_true() {
-        assert_eq!(equal_types(&syn::parse_str("Option<i32>").unwrap(), &syn::parse_str("Option<_>").unwrap()), true);
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<i32>").unwrap(),
+                &syn::parse_str("Option<_>").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_exactly_same_returns_true2() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Result<(i32, f32), std::fmt::Error>>").unwrap(),
+                &syn::parse_str("Option<Result<(i32, f32), std::fmt::Error>>").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_different1_returns_false() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Result<(i32, f32), std::fmt::Error>>").unwrap(),
+                &syn::parse_str("Option<Result<(i32, i32), std::fmt::Error>>").unwrap()
+            ),
+            false
+        );
+    }
+
+    #[test]
+    fn equal_types_different2_returns_false() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Result<(i32, f32), std::error::Error>>").unwrap(),
+                &syn::parse_str("Option<Result<(i32, f32), std::fmt::Error>>").unwrap()
+            ),
+            false
+        );
+    }
+
+    #[test]
+    fn equal_types_compared_to_wildcard_returns_true2() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<i32>").unwrap(),
+                &syn::parse_str("_").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_compared_to_wildcard2_returns_true() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<i32>").unwrap(),
+                &syn::parse_str("Option<_>").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_compared_to_wildcard3_returns_true() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Option<i32>>").unwrap(),
+                &syn::parse_str("Option<Option<_>>").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_compared_to_wildcard4_returns_true() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Result<i32, i32>>").unwrap(),
+                &syn::parse_str("Option<Result<_, i32>>").unwrap()
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn equal_types_compared_to_wildcard5_returns_true() {
+        assert_eq!(
+            equal_types(
+                &syn::parse_str("Option<Result<i32, i32>>").unwrap(),
+                &syn::parse_str("Option<Result<_, f32>>").unwrap()
+            ),
+            false
+        );
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

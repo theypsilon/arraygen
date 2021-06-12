@@ -1,6 +1,6 @@
-use syn::{bracketed, Path, AttrStyle, Attribute};
 use syn::parse::{ParseStream, Result};
 use syn::Token;
+use syn::{bracketed, AttrStyle, Attribute, Path};
 
 pub fn single_parse_outer_attribute(input: ParseStream) -> Result<()> {
     let content;

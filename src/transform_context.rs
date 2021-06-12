@@ -7,9 +7,9 @@ use proc_macro2::TokenTree;
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse_macro_input;
+use syn::{Ident, Type};
 
 pub fn transform_ast(input: TokenStream) -> TokenStream {
-
     let arraygen = parse_macro_input!(input as DeriveArraygen);
 
     let struct_name = arraygen.struct_name;
@@ -17,7 +17,7 @@ pub fn transform_ast(input: TokenStream) -> TokenStream {
     if arraygen.gen_arrays.is_empty() {
         eprintln!(
             //struct_name.span(), @TODO emit warning
-            "The type '{}' derives '{}' but does not contain any '{}' attribute, so '{}' does nothing.",
+            "warning: The struct '{}' derives '{}' but does not contain any '{}' attribute, so '{}' does nothing.",
             struct_name,
             DERIVE_NAME,
             DECL_FN_NAME,
@@ -25,7 +25,7 @@ pub fn transform_ast(input: TokenStream) -> TokenStream {
         );
     }
 
-    let impl_fns = make_impl_fns(arraygen.gen_arrays);
+    let impl_fns = make_impl_fns(arraygen.gen_arrays, &struct_name);
     let (impl_generics, ty_generics, where_clause) = arraygen.generics.split_for_impl();
 
     let tokens = quote! {
@@ -40,15 +40,16 @@ pub fn transform_ast(input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-fn make_impl_fns(methods: HashMap<syn::Ident, GenArray>) -> Vec<TokenTree> {
+fn make_impl_fns(methods: HashMap<Ident, GenArray>, struct_name: &Ident) -> Vec<TokenTree> {
     methods
         .into_iter()
         .fold(Vec::<TokenTree>::new(), |mut acc, (name, method)| {
             if method.fields.is_empty() {
                 eprintln!(
                     //method.fn_name.span(), @TODO emit warning
-                    "Method '{}' returns an empty array.",
-                    name
+                    "warning: Method '{}' from struct '{}' returns an empty array.",
+                    name,
+                    struct_name
                 );
             }
             let tokens = make_method_tokens(&method);
@@ -86,7 +87,7 @@ fn make_method_tokens(props: &GenArray) -> proc_macro2::TokenStream {
                 Some(CastKind::UnsafeTransmute) => {
                     let source_ty = &iae.ty;
                     let refb = match source_ty {
-                        syn::Type::Reference(_) if props.is_ref => quote! {},
+                        Type::Reference(_) if props.is_ref => quote! {},
                         _ => quote! { #refa }
                     };
                     quote ! { unsafe { std::mem::transmute::<#refb #source_ty, #return_type>(#refa self.#ident) } }
@@ -95,7 +96,6 @@ fn make_method_tokens(props: &GenArray) -> proc_macro2::TokenStream {
             }
         });
 
-
     quote! {
         #[inline(always)]
         #vis fn #fn_name (& #muta self) -> [#return_type; #count] {
@@ -103,4 +103,3 @@ fn make_method_tokens(props: &GenArray) -> proc_macro2::TokenStream {
         }
     }
 }
-

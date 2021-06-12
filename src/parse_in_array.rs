@@ -1,29 +1,29 @@
 use crate::casting::CastKind;
-use crate::FIELD_SELECTOR_NAME;
 use crate::parse_common::single_parse_outer_attribute;
-use syn::{Error, Ident, Token, Visibility, Type, braced, parenthesized, bracketed, Path};
+use crate::FIELD_SELECTOR_NAME;
 use syn::parse::{ParseStream, Result};
 use syn::token;
+use syn::{braced, bracketed, parenthesized, Error, Ident, Path, Token, Type, Visibility};
 
 pub struct InArrayElement {
     pub ident: Ident,
     pub ty: Type,
-    pub cast: Option<CastKind>
+    pub cast: Option<CastKind>,
 }
 
 pub struct InArrayAttributeEntry {
     pub ident: Ident,
-    pub decorator: Option<CastKind>
+    pub decorator: Option<CastKind>,
 }
 
 pub struct InArrayAttribute {
-    pub entries: Vec<InArrayAttributeEntry>
+    pub entries: Vec<InArrayAttributeEntry>,
 }
 
 pub struct InArrayField {
     pub attrs: Vec<InArrayAttribute>,
     pub ident: Ident,
-    pub ty: Type
+    pub ty: Type,
 }
 
 pub fn parse_in_array_fields(input: ParseStream) -> Result<InArrayField> {
@@ -32,11 +32,7 @@ pub fn parse_in_array_fields(input: ParseStream) -> Result<InArrayField> {
     let ident: Ident = input.parse()?;
     let _: Option<token::Colon> = Some(input.parse()?);
     let ty: Type = input.parse()?;
-    Ok(InArrayField {
-        attrs,
-        ident,
-        ty
-    })
+    Ok(InArrayField { attrs, ident, ty })
 }
 
 pub fn is_in_array_attribute(input: ParseStream) -> Result<bool> {
@@ -60,7 +56,6 @@ pub fn parse_in_array_attributes(input: ParseStream) -> Result<Vec<InArrayAttrib
     Ok(ret)
 }
 
-
 pub fn parse_single_in_array_attribute_header(input: ParseStream) -> Result<InArrayAttribute> {
     let content;
     let _: Token![#] = input.parse()?;
@@ -81,7 +76,7 @@ pub fn parse_single_in_array_attribute_body(input: ParseStream) -> Result<InArra
         entries: content
             .parse_terminated::<InArrayAttributeEntry, Token![,]>(parse_attribute_entry)?
             .into_iter()
-            .collect()
+            .collect(),
     })
 }
 
@@ -94,9 +89,23 @@ pub fn parse_attribute_entry(input: ParseStream) -> Result<InArrayAttributeEntry
         let decorator = match deco_ident.to_string().as_ref() {
             "cast" => CastKind::SafeCast,
             "unsafe_transmute" => CastKind::UnsafeTransmute,
-            decorator => return Err(Error::new_spanned(deco_ident, format!("{} doesn't allow '{}' as decorator", FIELD_SELECTOR_NAME, decorator)))
+            decorator => {
+                return Err(Error::new_spanned(
+                    deco_ident,
+                    format!(
+                        "{} doesn't allow '{}' as decorator",
+                        FIELD_SELECTOR_NAME, decorator
+                    ),
+                ))
+            }
         };
-        return Ok(InArrayAttributeEntry {ident, decorator: Some(decorator)})  
+        return Ok(InArrayAttributeEntry {
+            ident,
+            decorator: Some(decorator),
+        });
     }
-    Ok(InArrayAttributeEntry {ident, decorator: None})
+    Ok(InArrayAttributeEntry {
+        ident,
+        decorator: None,
+    })
 }
