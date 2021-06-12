@@ -1,5 +1,5 @@
 use crate::casting::CastKind;
-use crate::parse_common::single_parse_outer_attribute;
+use crate::parse_common::{single_parse_outer_attribute, equal_types};
 use crate::parse_in_array::InArrayElement;
 use crate::{DECL_FN_NAME, IMPLICIT_SELECT_ALL_NAME};
 use quote::quote;
@@ -87,19 +87,21 @@ pub fn parse_gen_array_group(input: ParseStream) -> Result<GenArray> {
             return Err(content.error("missing type to select"));
         }
 
-        for i in implicit_select_all.iter().enumerate() {
-            if implicit_select_all[1..].contains(&implicit_select_all[i.0]) {
-                let duplicated = i.1;
-                return Err(Error::new_spanned(
-                    duplicated,
-                    format!(
-                        "{} method '{}' contains {} clause with duplicated '{}' type",
-                        DECL_FN_NAME,
-                        fn_name,
-                        IMPLICIT_SELECT_ALL_NAME,
-                        quote! { #duplicated }.to_string()
-                    ),
-                ));
+        for (i, ty_left) in implicit_select_all.iter().enumerate() {
+            for j in i + 1 .. implicit_select_all.len() {
+                let ty_right = &implicit_select_all[j];
+                if equal_types(ty_left, ty_right) || equal_types(ty_right, ty_left) {
+                    return Err(Error::new_spanned(
+                        ty_right,
+                        format!(
+                            "{} method '{}' contains {} clause with duplicated '{}' type",
+                            DECL_FN_NAME,
+                            fn_name,
+                            IMPLICIT_SELECT_ALL_NAME,
+                            quote! { #ty_right }.to_string()
+                        ),
+                    ));
+                }
             }
         }
     }

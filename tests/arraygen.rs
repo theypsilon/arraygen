@@ -323,4 +323,17 @@ mod tests {
 
         assert_eq!(*actual.number_refs()[0], -1080162734);
     }
+
+    #[test]
+    fn test_implicit_select_all___with_many_types___compiles_correctly() {
+        #[derive(Arraygen)]
+        #[gen_array(fn number_refs: i32, implicit_select_all: i8, u8, i16, u16, i32, u32, f32, f64)]
+        struct Sut {
+            pub a: i32,
+        }
+
+        let actual = Sut { a: -1 };
+
+        assert_eq!(actual.number_refs().len(), 1);
+    }
 }

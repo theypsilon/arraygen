@@ -39,3 +39,27 @@ struct Implicit5 {
 struct Implicit6 {
     pub value: Option<f32>,
 }
+
+#[derive(Arraygen)]
+#[gen_array(fn my_array: Result<f32, f32>, implicit_select_all:  Result<_, f32>, Result<f32, _>)] //~ERROR 44:82: 44:96: gen_array method 'my_array' contains implicit_select_all clause with duplicated 'Result < f32, _ >' type
+struct Implicit7 {
+    pub value: Result<f32, f32>,
+}
+
+#[derive(Arraygen)]
+#[gen_array(fn my_array: Option<Result<f32, f32>>, implicit_select_all:  Option<Result<_, f32>>, Option<Result<f32, _>>)] //~ERROR 50:98: 50:120: gen_array method 'my_array' contains implicit_select_all clause with duplicated 'Option < Result < f32, _ > >' type
+struct Implicit8 {
+    pub value: Option<Result<f32, f32>>,
+}
+
+#[derive(Arraygen)]
+#[gen_array(fn my_array: Result<Option<f32>, Option<f32>>, implicit_select_all:  Result<Option<_>, Option<f32>>, Result<Option<f32>, Option<_>>)] //~ERROR 56:114: 56:144: gen_array method 'my_array' contains implicit_select_all clause with duplicated 'Result < Option < f32 >, Option < _ > >' type
+struct Implicit9 {
+    pub value: Result<Option<f32>, Option<f32>>,
+}
+
+#[derive(Arraygen)]
+#[gen_array(fn my_array: i32, implicit_select_all: i32, f32, _, u16, u8, s8)] //~ERROR 62:62: 62:63: gen_array method 'my_array' contains implicit_select_all clause with duplicated '_' type
+struct Implicit10 {
+    pub value: Option<f32>,
+}
