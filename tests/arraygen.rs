@@ -248,23 +248,23 @@ mod tests {
         assert_eq!(actual.options().len(), 2);
     }
 
-    // #[test]
-    // fn test_implicit_select_all___given_result_with_wildcard___returns_all_result_fields() {
+    #[test]
+    fn test_implicit_select_all___given_result_with_wildcard___returns_all_result_fields() {
 
-    //     #[derive(Arraygen)]
-    //     #[gen_array(fn options: &Result<i32, std::fmt::Error>, implicit_select_all: Result<_, std::fmt::Error>)]
-    //     struct Sut {
-    //         pub a: Result<i32, std::fmt::Error>,
-    //         pub b: f32,
-    //     }
+        #[derive(Arraygen)]
+        #[gen_array(fn options: &Result<i32, std::fmt::Error>, implicit_select_all: Result<_, std::fmt::Error>)]
+        struct Sut {
+            pub a: Result<i32, std::fmt::Error>,
+            pub b: f32,
+        }
 
-    //     let actual = Sut {
-    //         a: Ok(1),
-    //         b: 3.0,
-    //     };
+        let actual = Sut {
+            a: Ok(1),
+            b: 3.0,
+        };
 
-    //     assert_eq!(actual.options().len(), 1);
-    // }
+        assert_eq!(actual.options().len(), 1);
+    }
 
     #[test]
     fn test_in_array_cast___to_different_type___compiles_correctly() {
