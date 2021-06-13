@@ -156,8 +156,48 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// assert_eq!(numbers.evens(), [2, 4]);
 /// assert_eq!(numbers.primes(), [2, 3, 5]);
 /// ```
+/// 
+/// You may also add decorators to your `in_array` attribute.
 ///
+/// ```ignore
+/// #[in_array(your_method_name { comma_separated_decorators })]
+/// ```
 ///
+/// Possible decorators are:
+/// 
+/// - cast : Casts the field type to the return type of the `gen_array` method.
+/// - unsafe_transmute : Uses unsafe { std::mem::transmute } the type of the field to the return type of the `gen_array` method.
+/// - override_implicit : In case the field is already selected by a `implicit_select_all` clause for this `gen_array` (more about this clause later), you may use `override_implicit` to apply different decorators to the current field.
+/// 
+/// Casting example:
+/// 
+/// ```rust
+/// # use arraygen::Arraygen;
+/// #[derive(Arraygen)]
+/// #[gen_array(fn all: i32)]
+/// struct Numbers {
+///     #[in_array(all { cast })]
+///     one: f32,
+///
+///     #[in_array(all { cast })]
+///     two: u8,
+///
+///     #[in_array(all { cast })]
+///     three: bool,
+/// }
+/// 
+/// let numbers = Numbers {
+///     one: 1.0,
+///     two: 1,
+///     three: true
+/// };
+/// 
+/// assert_eq!(numbers.all(), [1, 1, 1]);
+/// 
+/// ```
+/// 
+/// 
+/// 
 /// # Trait Objects
 ///
 /// A very good use-case for `Arraygen` would be being able to extract Trait Objects from different concrete types, so you can operate in all of them at once.
@@ -284,7 +324,56 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///
 /// assert_eq!(prices.get_all_prices().iter().sum::<f32>(), 14.0);
 /// ```
+/// 
+/// The `implicit_select_all` clause may also include decorators:
+/// ```ignore
+/// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all { comma_separated_decorators }: MatchingFieldTypes)]
+/// ```
+/// 
+/// See the about which decorators you may use in the previous `in_array` section.
 ///
+/// # Implicit selection of Fields with Type Wilcards
+/// 
+/// You may use Type Wildcards (`_`) on the `implicit_select_all` clause.
+/// 
+/// For example, next expression will match all fields regardless of their type (this might be used in conjunction with decorators for casting between types):
+/// 
+/// ```ignore
+/// #[gen_array(fn all_fields: f32, implicit_select_all: _)]
+/// ```
+/// 
+/// Type Wildcards may be used within a more complex Type definition, like `Option < _ >` or `Result < f32, _ >`. Example:
+/// 
+/// ```rust
+/// # use arraygen::Arraygen;
+/// #[derive(Arraygen, Debug)]
+/// #[gen_array(fn options: &mut dyn ResetOption, implicit_select_all: Option<_>)]
+/// struct Options {
+///     pub a: Option<i32>,
+///     pub b: Option<bool>
+/// }
+/// 
+/// impl<T> ResetOption for Option<T> {
+///     fn reset(&mut self) {
+///         *self = None;
+///     }
+/// }
+
+/// trait ResetOption {
+///     fn reset(&mut self);
+/// }
+/// 
+/// let mut options = Options {
+///     a: Some(1),
+///     b: Some(true)
+/// };
+/// 
+/// options.options().iter_mut().for_each(|o| o.reset());
+/// assert_eq!(format!("{:?}", options), "Options { a: None, b: None }");
+/// ```
+/// 
+
+
 
 #[proc_macro_derive(Arraygen, attributes(gen_array, in_array))]
 pub fn arraygen(input: TokenStream) -> TokenStream {

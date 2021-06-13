@@ -63,12 +63,12 @@ mod test {
     ty_inferred_by_tests! {
         ty_inferred_by___with_exactly_same_option___returns_true: "Option<i32>", "Option<i32>", true
         ty_inferred_by___with_exactly_same_complex_ty___returns_true: "Option<Result<(i32, f32), std::fmt::Error>>", "Option<Result<(i32, f32), std::fmt::Error>>", true
-        ty_inferred_by___with_different_result1___returns_false: "Option<Result<(i32, f32), std::fmt::Error>>", "Option<Result<(i32, i32), std::fmt::Error>>", false
-        ty_inferred_by___with_different_result2___returns_false: "Option<Result<(i32, f32), std::error::Error>>", "Option<Result<(i32, f32), std::fmt::Error>>", false
-        ty_inferred_by___compared_to_wildcard1___returns_true: "Option<i32>", "_", true
-        ty_inferred_by___compared_to_wildcard2___returns_true: "Option<i32>", "Option<_>", true
-        ty_inferred_by___compared_to_wildcard3___returns_true: "Option<Option<i32>>", "Option<Option<_>>", true
-        ty_inferred_by___compared_to_wildcard4___returns_true: "Option<Result<i32, i32>>", "Option<Result<_, i32>>", true
-        ty_inferred_by___compared_to_wildcard5___returns_false: "Option<Result<i32, i32>>", "Option<Result<_, f32>>", false
+        ty_inferred_by___with_slightly_different_complex_ty_1___returns_false: "Option<Result<(i32, f32), std::fmt::Error>>", "Option<Result<(i32, i32), std::fmt::Error>>", false
+        ty_inferred_by___with_slightly_different_complex_ty_2___returns_false: "Option<Result<(i32, f32), std::error::Error>>", "Option<Result<(i32, f32), std::fmt::Error>>", false
+        ty_inferred_by___compared_to_wildcard_1___returns_true: "Option<i32>", "_", true
+        ty_inferred_by___compared_to_wildcard_2___returns_true: "Option<i32>", "Option<_>", true
+        ty_inferred_by___compared_to_wildcard_3___returns_true: "Option<Option<i32>>", "Option<Option<_>>", true
+        ty_inferred_by___compared_to_wildcard_4___returns_true: "Option<Result<i32, i32>>", "Option<Result<_, i32>>", true
+        ty_inferred_by___compared_to_wildcard_5___returns_false: "Option<Result<i32, i32>>", "Option<Result<_, f32>>", false
     }
 }

@@ -5,6 +5,7 @@ fn main() {
     to_lowercase();
     call_trait_objects();
     implicit_select_all();
+    casts();
 }
 
 fn read_prices() {
@@ -115,6 +116,7 @@ struct Animals {
 fn implicit_select_all() {
     implicit_select_all_prices();
     implicit_select_all_animals();
+    implicit_select_all_with_wildcards();
 }
 
 fn implicit_select_all_prices() {
@@ -163,4 +165,55 @@ struct ImplicitAnimals {
     bacon: Pig,
     dogo: Dog,
     tiger: Cat,
+}
+
+fn implicit_select_all_with_wildcards() {
+    let mut options = Options {
+        a: Some(1),
+        b: Some(true),
+        c: 3.0,
+    };
+
+    println!("Options before reset: {:?}", options);
+    options.options().iter_mut().for_each(|o| o.reset());
+    println!("Options after reset: {:?}", options);
+}
+
+impl<T> ResetOption for Option<T> {
+    fn reset(&mut self) {
+        *self = None;
+    }
+}
+
+trait ResetOption {
+    fn reset(&mut self);
+}
+
+#[derive(Arraygen, Debug)]
+#[gen_array(fn options: &mut dyn ResetOption, implicit_select_all: Option<_>)]
+struct Options {
+    pub a: Option<i32>,
+    pub b: Option<bool>,
+    pub c: f32,
+}
+
+fn casts() {
+    let numbers = Numbers {
+        a: -1,
+        b: 1.0,
+        c: -1.0,
+        d: -1.0,
+    };
+
+    println!("{:?} casted to uints: {:?}", numbers, numbers.uints());
+}
+
+#[derive(Arraygen, Debug)]
+#[gen_array(fn uints: u32, implicit_select_all { cast }: _)]
+struct Numbers {
+    pub a: i32,
+    pub b: f32,
+    pub c: f32,
+    #[in_array(uints { override_implicit, unsafe_transmute })]
+    pub d: f32,
 }

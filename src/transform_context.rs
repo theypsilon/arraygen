@@ -18,7 +18,7 @@ pub fn transform_ast(input: TokenStream) -> TokenStream {
     if arraygen.gen_arrays.is_empty() {
         eprintln!(
             //struct_name.span(), @TODO emit warning
-            "warning: The struct '{}' derives '{}' but does not contain any '{}' attribute, so '{}' does nothing.",
+            "warning (Arraygen): The struct '{}' derives '{}' but does not contain any '{}' attribute, so '{}' does nothing.",
             struct_name,
             DERIVE_NAME,
             DECL_FN_NAME,
@@ -48,7 +48,7 @@ fn make_impl_fns(methods: HashMap<Ident, GenArray>, struct_name: &Ident) -> Vec<
             if method.fields.is_empty() {
                 eprintln!(
                     //method.fn_name.span(), @TODO emit warning
-                    "warning: Method '{}' from struct '{}' returns an empty array.",
+                    "warning (Arraygen): Method '{}' from struct '{}' returns an empty array.",
                     name,
                     struct_name
                 );
