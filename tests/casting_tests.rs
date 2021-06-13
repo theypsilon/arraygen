@@ -74,7 +74,13 @@ mod tests {
             pub e: f32,
         }
 
-        let actual = Sut { a: 1, b: 1, c: 1, d: 1, e: 1.0 };
+        let actual = Sut {
+            a: 1,
+            b: 1,
+            c: 1,
+            d: 1,
+            e: 1.0,
+        };
 
         assert_eq!(actual.number_refs().iter().sum::<f64>(), 5.0);
     }

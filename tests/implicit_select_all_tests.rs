@@ -93,4 +93,40 @@ mod tests {
         assert_eq!(actual.options().len(), 1);
     }
 
+    #[test]
+    fn test_implicit_select_all___with_display_sim_bug_scenario___compiles_as_expected() {
+        impl<T> ResetOption for Option<T> {
+            fn reset(&mut self) {
+                *self = None;
+            }
+        }
+
+        pub trait ResetOption {
+            fn reset(&mut self);
+        }
+
+        pub trait Tracked {}
+        impl Tracked for i32 {}
+        impl Tracked for Result<i32, i32> {}
+
+        #[derive(Arraygen)]
+        #[gen_array(pub fn options: &mut dyn ResetOption, implicit_select_all: Option<_>)]
+        #[gen_array(pub fn tracked: &mut dyn Tracked, implicit_select_all: i32, Result<i32, i32>)]
+        pub struct Sut {
+            // tracked
+            pub a: Result<i32, i32>,
+            pub b: i32,
+
+            // options
+            pub c: Option<i32>,
+        }
+
+        let mut actual = Sut {
+            a: Ok(1),
+            b: 3,
+            c: Some(1),
+        };
+        assert_eq!(actual.options().len(), 1);
+        assert_eq!(actual.tracked().len(), 2);
+    }
 }

@@ -1,40 +1,106 @@
+use proc_macro2::{token_stream::IntoIter, TokenTree, TokenTree::*};
 use quote::quote;
-use regex::Regex;
 use syn::Type;
 
 pub fn are_matching_types(left_ty: &Type, right_ty: &Type) -> bool {
-    ty_inferred_by(left_ty, right_ty) || ty_inferred_by(right_ty, left_ty)
+    compare_types(left_ty, right_ty, true)
 }
 
 pub fn ty_inferred_by(field_ty: &Type, implicit_ty: &Type) -> bool {
-    if *field_ty == *implicit_ty {
+    compare_types(field_ty, implicit_ty, false)
+}
+
+fn compare_types(left_ty: &Type, right_ty: &Type, wildcards_on_left: bool) -> bool {
+    if *left_ty == *right_ty {
         return true;
     }
-    if let Type::Infer(_) = implicit_ty {
+    if let Type::Infer(_) = right_ty {
         return true;
     }
+    if wildcards_on_left {
+        if let Type::Infer(_) = left_ty {
+            return true;
+        }
+    }
 
-    let mut implicit_iter = quote! { #implicit_ty }.into_iter();
+    let mut right_tokens = quote! { #right_ty }.into_iter();
+    let mut left_tokens = quote! { #left_ty }.into_iter();
 
-    if !implicit_iter.any(|t| matches!(t, proc_macro2::TokenTree::Ident(p) if p == "_")) {
+    let mut last_group = 'Z';
+
+    let mut left_tokens_next;
+    let mut right_tokens_next;
+
+    loop {
+        left_tokens_next = left_tokens.next();
+        right_tokens_next = right_tokens.next();
+
+        let left_t = match left_tokens_next {
+            Some(ref t) => t,
+            None => break,
+        };
+
+        let right_t = match right_tokens_next {
+            Some(ref t) => t,
+            None => break,
+        };
+
+        match right_t {
+            Punct(ref p) if p.as_char() == '(' || p.as_char() == '<' || p.as_char() == '[' => {
+                last_group = p.as_char()
+            }
+            _ => {}
+        }
+
+        match (&left_t, &right_t) {
+            (Punct(p1), Punct(p2)) if p1.as_char() == p2.as_char() => continue,
+            (Ident(i1), Ident(i2)) if i1 == i2 => continue,
+            (Literal(l1), Literal(l2)) if l1.to_string() == l2.to_string() => continue,
+            (Group(g1), Group(g2)) if g1.to_string() == g2.to_string() => continue,
+            _ => {}
+        }
+
+        if advance_if_wildcard(&right_t, &mut right_tokens, &mut left_tokens, last_group)
+            || (wildcards_on_left
+                && advance_if_wildcard(&left_t, &mut left_tokens, &mut right_tokens, last_group))
+        {
+            continue;
+        }
         return false;
     }
 
-    let implicit_string = implicit_iter
-        .map(|t| t.to_string())
-        .map(|s| if s == "_" { ".+".to_string() } else { s })
-        .collect::<Vec<String>>()
-        .join("");
+    left_tokens_next.is_none() && right_tokens_next.is_none()
+}
 
-    let field_string = quote! { #field_ty }
-        .into_iter()
-        .map(|t| t.to_string())
-        .collect::<Vec<String>>()
-        .join("");
+fn advance_if_wildcard(
+    wildcard_token: &TokenTree,
+    wildcard_iter: &mut IntoIter,
+    other_iter: &mut IntoIter,
+    last_group: char,
+) -> bool {
+    if !matches!(wildcard_token, Ident(ref p) if p == "_") {
+        return false;
+    }
 
-    match Regex::new(implicit_string.as_ref()) {
-        Ok(re) => re.is_match(field_string.as_ref()),
-        _ => false,
+    wildcard_iter.next();
+    loop {
+        let other_next = other_iter.next();
+        let other_token = match other_next {
+            Some(ref t) => t,
+            None => return true,
+        };
+
+        match other_token {
+            Punct(ref p)
+                if (p.as_char() == ')' && last_group == '(')
+                    || (p.as_char() == '>' && last_group == '<')
+                    || (p.as_char() == ']' && last_group == '[')
+                    || p.as_char() == ',' =>
+            {
+                return true
+            }
+            _ => {}
+        }
     }
 }
 
@@ -70,5 +136,30 @@ mod test {
         ty_inferred_by___compared_to_wildcard_3___returns_true: "Option<Option<i32>>", "Option<Option<_>>", true
         ty_inferred_by___compared_to_wildcard_4___returns_true: "Option<Result<i32, i32>>", "Option<Result<_, i32>>", true
         ty_inferred_by___compared_to_wildcard_5___returns_false: "Option<Result<i32, i32>>", "Option<Result<_, f32>>", false
+        ty_inferred_by___compared_to_wildcard_6___returns_true: "Result<i32, Option<i32>>", "Result<_, Option<i32>>", true
+        ty_inferred_by___with_matching_wildcards_in_both_sides_1___returns_true: "Result<_, i32>", "Result<_, i32>", true
+        ty_inferred_by___with_matching_wildcards_in_both_sides_2___returns_true: "Result<i32, _>", "Result<i32, _>", true
+    }
+
+    macro_rules! are_matching_types_tests {
+        ($($name:ident: $str1:expr, $str2:expr, $expected:expr)*) => {
+        $(
+            #[test]
+            fn $name() {
+                assert_eq!(
+                    are_matching_types(
+                        &syn::parse_str($str1).unwrap(),
+                        &syn::parse_str($str2).unwrap()
+                    ),
+                    $expected
+                );
+            }
+        )*
+        }
+    }
+
+    are_matching_types_tests! {
+        are_matching_types___with_matching_wildcards_in_both_sides___returns_true: "Result<i32, _>", "Result<_, i32>", true
+        are_matching_types___between_wildcard_and_any_other_type___returns_true: "_", "Option<f32>", true
     }
 }

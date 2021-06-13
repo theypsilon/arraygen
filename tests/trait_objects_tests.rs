@@ -5,7 +5,8 @@ mod tests {
     use arraygen::Arraygen;
 
     #[test]
-    fn test_trait_objects_return_type___with_proper_declarations_and_includes___compiles_as_expected() {
+    fn test_trait_objects_return_type___with_proper_declarations_and_includes___compiles_as_expected(
+    ) {
         struct A {}
         struct B {}
         trait C {}
