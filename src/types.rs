@@ -28,21 +28,11 @@ fn compare_types(left_ty: &Type, right_ty: &Type, wildcards_on_left: bool) -> bo
 
     let mut last_group = 'Z';
 
-    let mut left_tokens_next;
-    let mut right_tokens_next;
-
     loop {
-        left_tokens_next = left_tokens.next();
-        right_tokens_next = right_tokens.next();
-
-        let left_t = match left_tokens_next {
-            Some(ref t) => t,
-            None => break,
-        };
-
-        let right_t = match right_tokens_next {
-            Some(ref t) => t,
-            None => break,
+        let (left_t, right_t) = match (left_tokens.next(), right_tokens.next()) {
+            (Some(lt), Some(rt)) => (lt, rt),
+            (Some(_), None) | (None, Some(_))=> return false,
+            (None, None) => return true
         };
 
         match right_t {
@@ -60,16 +50,25 @@ fn compare_types(left_ty: &Type, right_ty: &Type, wildcards_on_left: bool) -> bo
             _ => {}
         }
 
-        if advance_if_wildcard(&right_t, &mut right_tokens, &mut left_tokens, last_group)
+        let mut termination = AdvanceTermination { wildcard_ended: false, other_ended: false };
+
+        if advance_if_wildcard(&right_t, &mut right_tokens, &mut left_tokens, last_group, &mut termination)
             || (wildcards_on_left
-                && advance_if_wildcard(&left_t, &mut left_tokens, &mut right_tokens, last_group))
+                && advance_if_wildcard(&left_t, &mut left_tokens, &mut right_tokens, last_group, &mut termination))
         {
-            continue;
+            match (termination.wildcard_ended, termination.other_ended) {
+                (true, true) => return true,
+                (true, false) | (false, true) => return false,
+                (false, false) => continue
+            }
         }
         return false;
     }
+}
 
-    left_tokens_next.is_none() && right_tokens_next.is_none()
+struct AdvanceTermination {
+    pub wildcard_ended: bool,
+    pub other_ended: bool
 }
 
 fn advance_if_wildcard(
@@ -77,19 +76,20 @@ fn advance_if_wildcard(
     wildcard_iter: &mut IntoIter,
     other_iter: &mut IntoIter,
     last_group: char,
+    termination: &mut AdvanceTermination
 ) -> bool {
     if !matches!(wildcard_token, Ident(ref p) if p == "_") {
         return false;
     }
 
-    wildcard_iter.next();
-    loop {
-        let other_next = other_iter.next();
-        let other_token = match other_next {
-            Some(ref t) => t,
-            None => return true,
-        };
+    match wildcard_iter.next() {
+        Some(_) => {},
+        None => {
+            termination.wildcard_ended = true;
+        }
+    }
 
+    for other_token in other_iter {
         match other_token {
             Punct(ref p)
                 if (p.as_char() == ')' && last_group == '(')
@@ -97,11 +97,13 @@ fn advance_if_wildcard(
                     || (p.as_char() == ']' && last_group == '[')
                     || p.as_char() == ',' =>
             {
-                return true
+                return true;
             }
             _ => {}
         }
     }
+    termination.other_ended = true;
+    true
 }
 
 #[allow(non_snake_case)]
