@@ -17,10 +17,8 @@ fn compare_types(left_ty: &Type, right_ty: &Type, wildcards_on_left: bool) -> bo
     if let Type::Infer(_) = right_ty {
         return true;
     }
-    if wildcards_on_left {
-        if let Type::Infer(_) = left_ty {
-            return true;
-        }
+    if let (true, Type::Infer(_)) = (wildcards_on_left, left_ty) {
+        return true;
     }
 
     let mut right_tokens = quote! { #right_ty }.into_iter();
