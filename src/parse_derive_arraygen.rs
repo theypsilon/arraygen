@@ -71,65 +71,62 @@ pub(crate) fn parse_braced_struct(
     let content;
     let _ = braced!(content in input);
     parse_inner_attributes(&content)?;
-    let mut err = None;
-    content
+    for iaf in content
         .parse_terminated::<InArrayField, Token![,]>(parse_in_array_fields)?
         .into_iter()
-        .for_each(|iaf| {
-            for (_, ga) in gen_arrays.iter_mut() {
-                for implicit_ty in ga.implicit_select_all_tys.iter() {
-                    if ty_inferred_by(&iaf.ty, implicit_ty) {
+    {
+        for (_, ga) in gen_arrays.iter_mut() {
+            for implicit_ty in ga.implicit_select_all_tys.iter() {
+                if ty_inferred_by(&iaf.ty, implicit_ty) {
+                    ga.fields.push(InArrayElement {
+                        ident: iaf.ident.clone(),
+                        ty: iaf.ty.clone(),
+                        cast: ga.implicit_select_all_decorator.cast.clone(),
+                        kind: InArrayElementKind::Implicit,
+                    });
+                }
+            }
+        }
+        for attr in iaf.attrs.iter() {
+            for entry in attr.entries.iter() {
+                if let Some(ga) = gen_arrays.get_mut(&entry.ident) {
+                    let iae = ga.fields.iter().find(|iae| iae.ident == iaf.ident);
+                    if matches!(iae, Some(iae) if iae.kind != InArrayElementKind::Implicit || (iae.kind == InArrayElementKind::Implicit && !entry.decorator.override_implicit))
+                    {
+                        return Err(Error::new_spanned(
+                            entry.ident.clone(),
+                            format!(
+                                "Field '{}' is already included in {} method '{}'",
+                                iaf.ident.to_string(),
+                                DECL_FN_NAME,
+                                entry.ident.to_string()
+                            ),
+                        ));
+                    } else {
+                        if let Some(ident) = iae.map(|iae| iae.ident.clone()) {
+                            ga.fields.retain(|field| field.ident != ident);
+                        }
+
                         ga.fields.push(InArrayElement {
                             ident: iaf.ident.clone(),
                             ty: iaf.ty.clone(),
-                            cast: ga.implicit_select_all_decorator.cast.clone(),
-                            kind: InArrayElementKind::Implicit
+                            cast: entry.decorator.cast.clone(),
+                            kind: InArrayElementKind::InArray,
                         });
                     }
+                } else {
+                    return Err(Error::new_spanned(
+                        entry.ident.clone(),
+                        format!(
+                            "{} method '{}' not present but used by field '{}'",
+                            DECL_FN_NAME,
+                            entry.ident.to_string(),
+                            iaf.ident.to_string()
+                        ),
+                    ));
                 }
             }
-            for attr in iaf.attrs.iter() {
-                for entry in attr.entries.iter() {
-                    if let Some(ga) = gen_arrays.get_mut(&entry.ident) {
-                        let iae = ga.fields.iter().find(|iae| iae.ident == iaf.ident);
-                        if matches!(iae, Some(iae) if iae.kind != InArrayElementKind::Implicit || (iae.kind == InArrayElementKind::Implicit && !entry.decorator.override_implicit)) {
-                            err = Some(Error::new_spanned(
-                                entry.ident.clone(),
-                                format!(
-                                    "Field '{}' is already included in {} method '{}'",
-                                    iaf.ident.to_string(),
-                                    DECL_FN_NAME,
-                                    entry.ident.to_string()
-                                ),
-                            ));
-                        } else {
-                            if let Some(ident) = iae.map(|iae| iae.ident.clone()) {
-                                ga.fields.retain(|field| field.ident != ident);
-                            }
-
-                            ga.fields.push(InArrayElement {
-                                ident: iaf.ident.clone(),
-                                ty: iaf.ty.clone(),
-                                cast: entry.decorator.cast.clone(),
-                                kind: InArrayElementKind::InArray
-                            });
-                        }
-                    } else {
-                        err = Some(Error::new_spanned(
-                            entry.ident.clone(),
-                            format!(
-                                "{} method '{}' not present but used by field '{}'",
-                                DECL_FN_NAME,
-                                entry.ident.to_string(),
-                                iaf.ident.to_string()
-                            ),
-                        ));
-                    }
-                }
-            }
-        });
-    if let Some(err) = err {
-        return Err(err);
+        }
     }
     Ok(())
 }

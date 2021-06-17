@@ -31,8 +31,7 @@ impl Parse for Decorator {
         if input.peek(token::Brace) {
             let content;
             let _ = braced!(content in input);
-            let idents = Punctuated::<Ident, Token![,]>::parse_separated_nonempty(&content)?;
-            for ident in idents.iter() {
+            for ident in Punctuated::<Ident, Token![,]>::parse_separated_nonempty(&content)?.iter() {
                 match ident.to_string().as_ref() {
                     "override_implicit" if !decorator.override_implicit => {
                         decorator.override_implicit = true

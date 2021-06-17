@@ -71,11 +71,11 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// #[gen_array(?visibility fn your_method_name: YourReturnType)]
 /// ```
 ///
-/// * **?visibility**: This placeholder is optional. You can let it blank entirely. Or you can write `pub`, `pub(crate)` or any other pub variant.
+/// * **?visibility**: This placeholder is optional. You can let it blank entirely. Or you can write `pub`, `pub(crate)`, or any other pub variant.
 /// * **your_method_name**: This is meant to be any valid method name, following the standard rules. You can't use a name taken by another method in the struct impl. This restriction also includes other `Arraygen` methods.
-/// * **YourReturnType**: The return type can be any Rust type that can appear in a struct field. Notice that if the `type` does not implement the trait `Copy`, you are better returning `&type` or `&mut type` instead, in order to avoid ownership errors.
+/// * **YourReturnType**: The return type can be any Rust type that can appear in a struct field. Notice that if the `type` does not implement the trait `Copy`, you are better returning `&type` or `&mut type` instead, to avoid ownership errors.
 ///
-/// There is no limit in the number of methods you can declare.
+/// There is no limit to the number of methods you can declare.
 ///
 /// By default, these new `Arraygen` methods return arrays of length 0. That's not very useful, but that's why we also have the next attribute: `in_array`.
 ///
@@ -157,7 +157,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// assert_eq!(numbers.primes(), [2, 3, 5]);
 /// ```
 ///
-/// You may also add decorators to your `in_array` attribute.
+/// Additionally, you may also add decorators to your `in_array` attribute.
 ///
 /// ```ignore
 /// #[in_array(your_method_name { comma_separated_decorators })]
@@ -165,9 +165,9 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///
 /// Possible decorators are:
 ///
-/// - cast : Casts the field type to the return type of the `gen_array` method.
-/// - unsafe_transmute : Uses unsafe { std::mem::transmute } the type of the field to the return type of the `gen_array` method.
-/// - override_implicit : In case the field is already selected by a `implicit_select_all` clause for this `gen_array` (more about this clause later), you may use `override_implicit` to apply different decorators to the current field.
+/// * **cast** : This decorator casts the current field to the return type of the `gen_array` method where it will be included.
+/// * **unsafe_transmute** : This one uses [`unsafe { std::mem::transmute }`](https://doc.rust-lang.org/std/mem/fn.transmute.html) to force an unsafe cast of the current field to the return type of the `gen_array` method.
+/// * **override_implicit** : In case the current field is already selected by an `implicit_select_all` clause for this `gen_array` (more about this clause later), you may use `override_implicit` to apply different decorators to the current field.
 ///
 /// Casting example:
 ///
@@ -200,7 +200,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///
 /// # Trait Objects
 ///
-/// A very good use-case for `Arraygen` would be being able to extract Trait Objects from different concrete types, so you can operate in all of them at once.
+/// A very good use-case for `Arraygen` consists of extracting [Trait Objects](https://doc.rust-lang.org/reference/types/trait-object.html) from different concrete types, so you can operate in all of them at once.
 ///
 /// ```rust
 /// # use arraygen::Arraygen;
@@ -296,13 +296,15 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///
 /// # Implicit selection of Fields by their Types
 ///
-/// You may omit entirely the `in_array` attribute if you use the `implicit_select_all` clause in your `gen_array` declarations.
+/// You may omit entirely the `in_array` attribute if you add the `implicit_select_all` clause at the end of your `gen_array` declarations.
 ///
 /// ```ignore
-/// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all: MatchingFieldTypes)]
+/// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all: Type1, Type2, Type3)]
 /// ```
 ///
 /// You may place either a single type in your `implicit_select_all` clause or a list of comma-separated types.
+/// 
+/// As an example, by adding "`implicit_select_all: f32`" to our `gen_array` method, we'll add all the fields that are of type `f32` in the current `struct`, as shown in the following code:
 ///
 /// ```rust
 /// # use arraygen::Arraygen;
@@ -330,19 +332,21 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// #[gen_array(?visibility fn your_method_name: YourReturnType, implicit_select_all { comma_separated_decorators }: MatchingFieldTypes)]
 /// ```
 ///
-/// See the about which decorators you may use in the previous `in_array` section.
+/// See which decorators you may use in the previous `in_array` section.
 ///
-/// # Implicit selection of Fields with Type Wilcards
+/// # Implicit selection of Fields with Type Wildcards
 ///
-/// You may use Type Wildcards (`_`) on the `implicit_select_all` clause.
+/// You may use *Type Wildcards* (`_`) on the `implicit_select_all` clause.
 ///
-/// For example, next expression will match all fields regardless of their type (this might be used in conjunction with decorators for casting between types):
+/// For example, the next expression will match all fields regardless of their type (this might be used in conjunction with decorators for casting between types):
 ///
 /// ```ignore
 /// #[gen_array(fn all_fields: f32, implicit_select_all: _)]
 /// ```
 ///
-/// Type Wildcards may be used within a more complex Type definition, like `Option < _ >` or `Result < f32, _ >`. Example:
+/// *Type Wildcards* may also be used within a more complex *Type* definition, like `Option < _ >` or `Result < f32, _ >`.
+/// 
+/// Example:
 ///
 /// ```rust
 /// # use arraygen::Arraygen;
@@ -371,6 +375,8 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 /// options.options().iter_mut().for_each(|o| o.reset());
 /// assert_eq!(format!("{:?}", options), "Options { a: None, b: None }");
 /// ```
+/// 
+/// As you may see above, using *Type Wildcards* in conjuction with [Trait Objects](#trait-objects) allows you to accomplish very powerful constructs in a very succinct manner.
 ///
 
 #[proc_macro_derive(Arraygen, attributes(gen_array, in_array))]
