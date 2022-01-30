@@ -3,7 +3,7 @@ name = "arraygen"
 version = "0.3.0"
 authors = ["José Manuel Barroso Galindo <theypsilon@gmail.com>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 description = "Derive macro for generating arrays from struct fields."
 readme = "README.md"
