@@ -20,7 +20,7 @@
 //!     last_name: "Lovelace".into()
 //! };
 //!
-//! for name in person.get_names().into_iter() {
+//! for name in person.get_names() {
 //!     *name = name.to_lowercase();
 //! }
 //!
@@ -282,7 +282,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///     c: Some(String::from("bar"))
 /// };
 ///
-/// for option in many.ephemeral_options().into_iter() {
+/// for option in many.ephemeral_options() {
 ///     option.set_none();
 /// }
 ///

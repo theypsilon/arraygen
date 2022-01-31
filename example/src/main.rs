@@ -41,7 +41,7 @@ fn to_lowercase() {
         last_name: "LoVElaCE".into(),
     };
 
-    for name in person.get_names().into_iter() {
+    for name in person.get_names() {
         *name = name.to_lowercase();
     }
 
