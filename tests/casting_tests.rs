@@ -82,7 +82,7 @@ mod tests {
             e: 1.0,
         };
 
-        assert_eq!(actual.number_refs().iter().sum::<f64>(), 5.0);
+        assert_eq!(actual.number_refs().into_iter().sum::<f64>(), 5.0);
     }
 
     #[test]

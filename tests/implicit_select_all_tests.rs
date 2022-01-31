@@ -25,7 +25,7 @@ mod tests {
             gold: 1000.0,
         };
 
-        assert_eq!(prices.get_all_prices().iter().sum::<f32>(), 14.0);
+        assert_eq!(prices.get_all_prices().into_iter().sum::<f32>(), 14.0);
     }
 
     #[test]
