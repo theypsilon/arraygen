@@ -20,8 +20,8 @@
 //!     last_name: "Lovelace".into()
 //! };
 //!
-//! for name in person.get_names().iter_mut() {
-//!     **name = name.to_lowercase();
+//! for name in person.get_names().into_iter() {
+//!     *name = name.to_lowercase();
 //! }
 //!
 //! assert_eq!(
@@ -282,7 +282,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///     c: Some(String::from("bar"))
 /// };
 ///
-/// for option in many.ephemeral_options().iter_mut() {
+/// for option in many.ephemeral_options().into_iter() {
 ///     option.set_none();
 /// }
 ///
@@ -372,7 +372,7 @@ const IMPLICIT_SELECT_ALL_NAME: &str = "implicit_select_all";
 ///     b: Some(true)
 /// };
 ///
-/// options.options().iter_mut().for_each(|o| o.reset());
+/// options.options().into_iter().for_each(|o| o.reset());
 /// assert_eq!(format!("{:?}", options), "Options { a: None, b: None }");
 /// ```
 /// 

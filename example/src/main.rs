@@ -18,7 +18,7 @@ fn read_prices() {
 
     println!(
         "Sum of all prices: {}",
-        prices.get_all_prices().iter().sum::<f32>()
+        prices.get_all_prices().into_iter().sum::<f32>()
     );
 }
 
@@ -41,8 +41,8 @@ fn to_lowercase() {
         last_name: "LoVElaCE".into(),
     };
 
-    for name in person.get_names().iter_mut() {
-        **name = name.to_lowercase();
+    for name in person.get_names().into_iter() {
+        *name = name.to_lowercase();
     }
 
     println!("Lowercase Ada name is: {}", person);
@@ -72,7 +72,7 @@ fn call_trait_objects() {
 
     let talk = animals
         .get_animals()
-        .iter()
+        .into_iter()
         .map(|animal| animal.talk())
         .collect::<Vec<&'static str>>()
         .join(", ");
@@ -129,7 +129,7 @@ fn implicit_select_all_prices() {
 
     println!(
         "Sum of all implicit prices: {}",
-        prices.get_all_prices().iter().sum::<f32>()
+        prices.get_all_prices().into_iter().sum::<f32>()
     );
 }
 
@@ -151,7 +151,7 @@ fn implicit_select_all_animals() {
 
     let talk = animals
         .get_animals()
-        .iter()
+        .into_iter()
         .map(|animal| animal.talk())
         .collect::<Vec<&'static str>>()
         .join(", ");
@@ -175,7 +175,7 @@ fn implicit_select_all_with_wildcards() {
     };
 
     println!("Options before reset: {:?}", options);
-    options.options().iter_mut().for_each(|o| o.reset());
+    options.options().into_iter().for_each(|o| o.reset());
     println!("Options after reset: {:?}", options);
 }
 

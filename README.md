@@ -24,8 +24,8 @@ let mut person = Person {
     last_name: "Lovelace".into()
 };
 
-for name in person.get_names().iter_mut() {
-    **name = name.to_lowercase();
+for name in person.get_names().into_iter() {
+    *name = name.to_lowercase();
 }
 
 assert_eq!(
